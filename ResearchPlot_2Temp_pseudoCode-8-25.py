@@ -64,7 +64,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from lmfit.models import RectangleModel
-
+import math
 # %%
 # get the data
 print(os.getcwd())
@@ -247,3 +247,128 @@ for i in range(len(Aa2)):
 Ayy = []
     for i in range(len(Aaa1)):
 Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
+
+# %%
+# 9-2-21
+# The following is an attempt to narrow in on a better system to
+# determine the amplitude of the various models
+
+# Step 1
+# check the total numerical mean of all data in the 'central range'
+
+def gold_range_mean(dataset, range=[10,30]):
+    constrainrangedata = dataset[(dataset['HeatMid'] > range[0]) &
+                                 (dataset['HeatMid'] < range[1])]
+    leng = len(constrainrangedata['HeatMid'])
+    avg = np.mean(constrainrangedata['phiPSIImax'])
+    med = np.median(constrainrangedata['phiPSIImax'])
+    std = np.std(constrainrangedata['phiPSIImax'])
+
+    return [leng, avg, med, std]
+
+
+# %%
+for i in range(1,17):
+    print('This run is for Adjusted PFT ' + str(i))
+    # Can add an index if one specific element is needed
+    print(gold_range_mean(PSIIContr[PSIIContr['Adjusted PFT'] == i]))
+# %%
+def get_setdata_plot(dataset):
+        """ Pick a chosen dataset that has a HeatMid column and phiPSIImax column"""
+        Ordered = dataset.sort_values(by='HeatMid')
+        x = Ordered['HeatMid']
+        x0 = x.iloc[:]
+        y = Ordered['phiPSIImax']
+        y0 = y.iloc[:]
+        # Quad Model run
+        mod = RectangleModel(form='erf')
+        pars = mod.guess(y0, x=x0)
+        pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
+        pars['center1'].set(value=-6, min=-12, max=7)
+        pars['center2'].set(value=46, min=35, max=57)
+        pars['sigma1'].set(value=7, min=1, max=12)
+        pars['sigma2'].set(value=5, min=1, max=12)
+        out = mod.fit(y, pars, x=x)
+        ModelChoice = 'Rect' #input('Chose between [Quad, Rect] or [Both] models:')
+        if ModelChoice == 'Rect':
+                print('You have chosen Rectangle model for the ', dataset.name, 'dataset.')
+                print(out.fit_report())
+                ps = get_Mod_paramsValues(out)
+                print(ps.val[:])
+                A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
+                # produces dataset for r-squared
+                Aa1 = (x - m1)/s1
+                Aaa1 = []
+                for i in range(len(Aa1)):
+                        Aaa1.append(math.erf(Aa1.iloc[i]))
+                Aa2 = -(x - m2)/s2
+                Aaa2 = []
+                for i in range(len(Aa2)):
+                        Aaa2.append(math.erf(Aa2.iloc[i]))
+                Ayy = []
+                for i in range(len(Aaa1)):
+                       Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
+                correlation_matrix = np.corrcoef(y, Ayy)
+                correlation_xy = correlation_matrix[0,1]
+                r_squared = correlation_xy**2
+                print(r_squared)
+                # Here the residual of the dataset is calculated
+                resid = (y - Ayy)
+                # Below is a histogram of the residual values
+                fig = plt.figure(figsize=(6, 3))
+                gs = fig.add_gridspec(2, 2,  width_ratios=(7, 2), height_ratios=(2, 7),
+                                      left=0.1, right=0.9, bottom=0.1, top=0.9,
+                                      wspace=0.05, hspace=0.05)
+                ax = fig.add_subplot(gs[1, 0])
+                ax.plot(x, resid, 'o')
+                ax_histy = fig.add_subplot(gs[1, 1], sharey=ax)
+                ax_histy.hist(resid, bins=40, orientation='horizontal')
+                ax_histy.tick_params(axis="y", labelleft=False)
+                #ax.set_title('Residuals of ' + dataset.name)
+                ax.grid(True)
+                #plt.savefig(dataset.name + 'residue5-28-21.JPG')
+                # Below is plot, r-squared functionality achieved
+                plt.figure(2, figsize=(5,4))
+                
+                plt.plot(x, y, 'k+', alpha=0.6)
+                plt.plot(x, out.best_fit, 'r-', label='best fit')
+                dely = out.eval_uncertainty(sigma=1)
+                plt.fill_between(x, out.best_fit-dely, out.best_fit+dely, color="#ABABAB",
+                 label='1-$\sigma$ \nuncertainty band')
+                plt.legend(loc='best')
+                plt.ylim([0, 1])
+                plt.xlim([-17, 62])
+                plt.ylabel('Maximum Quantum \nEfficiency of PSII', fontsize=14)
+                plt.xlabel('Temperature ' + u'\u2103', fontsize=14)
+                #plt.title('Rectangular (erf) model fit of ' + dataset.name +' with uncertainty')
+                plt.grid(True)
+                plt.annotate('$\mathregular{R^{2}}$ - ' + str(round(r_squared(y, Ayy), 2)) + '\nN = ' + str(len(y.index)), xy=(1,1),
+                             xycoords='axes fraction', xytext=(-10, -10), textcoords='offset pixels',
+                             horizontalalignment='right',
+                             verticalalignment='top')
+                plt.show()
+                #plt.savefig(dataset.name + 'model5-28-21.JPG')
+                # Below is the attempt at formatting a boxplot figure (can be optimized)
+                TrialBox = dataset.sort_values(by='HeatMid')
+                
+                Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -7)]
+                Box1 = TrialBox[(TrialBox['HeatMid'] > -7) & (TrialBox['HeatMid'] < 3)]
+                Box2 = TrialBox[(TrialBox['HeatMid'] > 3) & (TrialBox['HeatMid'] < 13)]
+                Box3 = TrialBox[(TrialBox['HeatMid'] > 13) & (TrialBox['HeatMid'] < 23)]
+                Box4 = TrialBox[(TrialBox['HeatMid'] > 23) & (TrialBox['HeatMid'] < 33)]
+                Box5 = TrialBox[(TrialBox['HeatMid'] > 33) & (TrialBox['HeatMid'] < 43)]
+                Box6 = TrialBox[(TrialBox['HeatMid'] > 43) & (TrialBox['HeatMid'] < 53)]
+                Box7 = TrialBox[(TrialBox['HeatMid'] > 53) & (TrialBox['HeatMid'] < 63)]
+                plt.figure(3)
+                plt.boxplot([Box0['phiPSIImax'], Box1['phiPSIImax'], Box2['phiPSIImax'], Box3['phiPSIImax'],
+                             Box4['phiPSIImax'], Box5['phiPSIImax'], Box6['phiPSIImax'], Box7['phiPSIImax']],
+                            positions=(-12, -2, 8, 18, 28, 38, 48, 58), widths=10)
+                plt.plot(x, y, 'o', alpha=0.3)
+                #plt.title(dataset.name + ' Boxplot (width 10) with data')
+                plt.ylim([0, 1])
+                plt.grid(True)
+                plt.show()
+                #plt.savefig(dataset.name + 'Box5-28-21.JPG')  
+
+
+# %%
