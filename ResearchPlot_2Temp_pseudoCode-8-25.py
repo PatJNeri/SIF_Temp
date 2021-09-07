@@ -259,6 +259,8 @@ Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
 def gold_range_mean(dataset, range=[10,30]):
     constrainrangedata = dataset[(dataset['HeatMid'] > range[0]) &
                                  (dataset['HeatMid'] < range[1])]
+    plt.hist(constrainrangedata['phiPSIImax'])
+    plt.show()
     leng = len(constrainrangedata['HeatMid'])
     avg = np.mean(constrainrangedata['phiPSIImax'])
     med = np.median(constrainrangedata['phiPSIImax'])
@@ -268,13 +270,36 @@ def gold_range_mean(dataset, range=[10,30]):
 
 
 # %%
+# Adjust what is in the [] to select a specific output for all PFT's
 for i in range(1,17):
     print('This run is for Adjusted PFT ' + str(i))
     # Can add an index if one specific element is needed
-    print(gold_range_mean(PSIIContr[PSIIContr['Adjusted PFT'] == i]))
+    print(gold_range_mean(PSIIContr[PSIIContr['Adjusted PFT'] == i])[1])
+
+
 # %%
-def get_setdata_plot(dataset):
-        """ Pick a chosen dataset that has a HeatMid column and phiPSIImax column"""
+
+
+
+
+# %%
+def get_Mod_paramsValues(output):
+        """Getting out values of model params with numerical values
+        Produces a dataframe of param names and values """
+        Var_list = output.var_names
+        frame = []
+        for n in range(len(Var_list)):
+                vari = output.params[Var_list[n]]
+                vari_split = str(vari).split()
+                vari_value = vari_split[2].split('=')
+                frame.append((Var_list[n], float(vari_value[1][:-1])))
+        Paramet = pd.DataFrame(frame, columns=['name', 'val'])
+        return Paramet
+
+def get_data_plot_modAmp(dataset):
+        """ Pick a chosen dataset that has a HeatMid column and phiPSIImax column
+        This function uses the mid range data metrics to pick an Amp"""
+        h = int(input('Choose which output of gold_range_mean to use'))
         Ordered = dataset.sort_values(by='HeatMid')
         x = Ordered['HeatMid']
         x0 = x.iloc[:]
@@ -283,19 +308,25 @@ def get_setdata_plot(dataset):
         # Quad Model run
         mod = RectangleModel(form='erf')
         pars = mod.guess(y0, x=x0)
-        pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
-        pars['center1'].set(value=-6, min=-12, max=7)
+        if h == 0:
+            pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
+        else:
+            pars['amplitude'].set(value=gold_range_mean(dataset)[h], vary=False)
+        pars['center1'].set(value=0, min=-12, max=7)
         pars['center2'].set(value=46, min=35, max=57)
         pars['sigma1'].set(value=7, min=1, max=12)
         pars['sigma2'].set(value=5, min=1, max=12)
         out = mod.fit(y, pars, x=x)
         ModelChoice = 'Rect' #input('Chose between [Quad, Rect] or [Both] models:')
         if ModelChoice == 'Rect':
-                print('You have chosen Rectangle model for the ', dataset.name, 'dataset.')
+                #print('You have chosen Rectangle model for the ', dataset.name, 'dataset.')
                 print(out.fit_report())
                 ps = get_Mod_paramsValues(out)
-                print(ps.val[:])
-                A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
+                #print(ps.val[:])
+                if h == 0:
+                    A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]
+                else:
+                    A, m1, s1, m2, s2 = gold_range_mean(dataset)[1], ps.val[0], ps.val[1], ps.val[2], ps.val[3]
                 # produces dataset for r-squared
                 Aa1 = (x - m1)/s1
                 Aaa1 = []
@@ -342,7 +373,7 @@ def get_setdata_plot(dataset):
                 plt.xlabel('Temperature ' + u'\u2103', fontsize=14)
                 #plt.title('Rectangular (erf) model fit of ' + dataset.name +' with uncertainty')
                 plt.grid(True)
-                plt.annotate('$\mathregular{R^{2}}$ - ' + str(round(r_squared(y, Ayy), 2)) + '\nN = ' + str(len(y.index)), xy=(1,1),
+                plt.annotate('$\mathregular{R^{2}}$ - ' + str(round(r_squared, 2)) + '\nN = ' + str(y.shape[0]), xy=(1,1),
                              xycoords='axes fraction', xytext=(-10, -10), textcoords='offset pixels',
                              horizontalalignment='right',
                              verticalalignment='top')
