@@ -64,6 +64,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from lmfit.models import RectangleModel
+import scipy.stats as stt
 import math
 # %%
 # get the data
@@ -265,8 +266,9 @@ def gold_range_mean(dataset, range=[10,30]):
     avg = np.mean(constrainrangedata['phiPSIImax'])
     med = np.median(constrainrangedata['phiPSIImax'])
     std = np.std(constrainrangedata['phiPSIImax'])
+    kurt = stt.kurtosis(constrainrangedata['phiPSIImax'], fisher=True)
 
-    return [leng, avg, med, std]
+    return [leng, avg, med, std, kurt]
 
 
 # %%
@@ -274,7 +276,7 @@ def gold_range_mean(dataset, range=[10,30]):
 for i in range(1,17):
     print('This run is for Adjusted PFT ' + str(i))
     # Can add an index if one specific element is needed
-    print(gold_range_mean(PSIIContr[PSIIContr['Adjusted PFT'] == i])[1])
+    print(gold_range_mean(PSIIContr[PSIIContr['Adjusted PFT'] == i])[4])
 
 
 # %%
