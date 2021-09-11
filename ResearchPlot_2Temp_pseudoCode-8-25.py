@@ -280,8 +280,16 @@ for i in range(1,17):
 
 
 # %%
-
-
+plt.plot(PSIIContr['HeatMid'], PSIIContr['phiPSIImax'], 'o', alpha=0.5)
+plt.ylim([0,1])
+plt.ylabel('Maximum Quantum \nEfficiency of PSII')
+plt.xlabel('Temperature ' + u'\u2103')
+plt.title('Full plot of PSIIContr all data')
+plt.grid(True)
+plt.annotate('n = ' + str(PSIIContr.shape[0]), xy=(1,1),
+             xycoords='axes fraction', xytext=(-10, -10), textcoords='offset pixels',
+             horizontalalignment='right',
+             verticalalignment='top')
 
 
 # %%
