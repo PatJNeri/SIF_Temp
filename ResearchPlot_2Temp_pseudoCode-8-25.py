@@ -413,3 +413,106 @@ def get_data_plot_modAmp(dataset):
 
 
 # %%
+def regiondata(data, min, max):
+    """Needs to contain HeatMid column in data"""
+    subset = data[(data['HeatMid'] > min) & (data['HeatMid'] < max)]
+    return subset
+
+def crossmodelPDF(data, width=5):
+    """Attempt to make a running PDF distribution across the model."""
+    minstart = np.min(data['HeatMid'])
+    maxstart = minstart + width
+    intboxes = int((abs(minmax(data['HeatMid'])[0]) + abs(minmax(data['HeatMid'])[1]))/width) + 1
+    for i in range(0, intboxes):
+        minm = minstart + i*width
+        maxm = maxstart + i*width
+        spread = regiondata(data['HeatMid'], minm, maxm)
+
+
+# %%
+# Produce a PFT spread plot
+fig, axs = plt.subplots(ncols=4, nrows=4, constrained_layout=True)
+for i in range(0,4):
+    for j in range(0,4):
+        pft = 4*i + j + 1
+        Ordered = PSIIContr[PSIIContr['Adjusted PFT'] == pft].sort_values(by='HeatMid')
+        x = Ordered['HeatMid']
+        x0 = x.iloc[:]
+        y = Ordered['phiPSIImax']
+        y0 = y.iloc[:]
+        axs[i,j].set_title('PFT ' + str(pft), loc='left')
+        mod = RectangleModel(form='erf')
+        pars = mod.guess(y0, x=x0)
+        pars['amplitude'].set(value=0.8, min=0.78, max=0.93)
+        pars['center1'].set(value=-6, min=-12, max=7)
+        pars['center2'].set(value=40, min=35, max=57)
+        pars['sigma1'].set(value=7, min=1, max=12)
+        pars['sigma2'].set(value=5, min=1, max=12)
+        out = mod.fit(y, pars, x=x)
+        ps = get_Mod_paramsValues(out)
+        A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
+        # produces dataset for r-squared
+        Aa1 = (x - m1)/s1
+        Aaa1 = []
+        for q in range(len(Aa1)):
+            Aaa1.append(math.erf(Aa1.iloc[q]))
+        Aa2 = -(x - m2)/s2
+        Aaa2 = []
+        for q in range(len(Aa2)):
+            Aaa2.append(math.erf(Aa2.iloc[q]))
+        Ayy = []
+        for q in range(len(Aaa1)):
+            Ayy.append((A/2)* (Aaa1[q] + Aaa2[q]))
+        correlation_matrix = np.corrcoef(y, Ayy)
+        correlation_xy = correlation_matrix[0,1]
+        r_squared = correlation_xy**2
+        axs[i,j].set_title('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), loc='right')
+        # Below is the attempt at formatting a boxplot figure (can be optimized)
+        axs[i,j].plot(x, y, 'o', alpha=0.3)
+        x2 = np.linspace(-32, 63, 500)
+        Aa12 = (x2 - m1)/s1
+        Aaa12 = []
+        for q in range(len(Aa12)):
+            Aaa12.append(math.erf(Aa12[q]))
+        Aa22 = -(x2 - m2)/s2
+        Aaa22 = []
+        for q in range(len(Aa22)):
+            Aaa22.append(math.erf(Aa22[q]))
+        Ayy2 = []
+        for q in range(len(Aaa12)):
+            Ayy2.append((A/2)* (Aaa12[q] + Aaa22[q]))
+        axs[i,j].plot(x2, Ayy2, 'r-')
+#                plt.annotate('$\mathregular{R^{2}}$ = ' + str(round(r2_score(y, Ayy), 2)) + '\nN = ' + str(len(y.index)), xy=(1,1),
+#                             xycoords='axes fraction', xytext=(-10, -10), textcoords='offset pixels',
+#                             horizontalalignment='right',
+#                             verticalalignment='top', fontsize=17)
+#                plt.xticks(ticks=range(-32,68, 5), labels=range(-32,68, 5), fontsize=10)
+#                plt.yticks(np.linspace(0,1,6), fontsize = 10)
+#                plt.ylabel('Maximum Quantum Efficiency of PSII', fontsize=17)
+#                plt.xlabel('Temperature ' + u'\u2103', fontsize=17)
+# %%
+# Consider adding in boxplot part to above plot
+        TrialBox = PSIIContr[PSIIContr['Adjusted PFT'] == pft].sort_values(by='HeatMid')
+        Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -12)] #-7
+        Box1 = TrialBox[(TrialBox['HeatMid'] > -7) & (TrialBox['HeatMid'] < -2)] #3
+        Box2 = TrialBox[(TrialBox['HeatMid'] > 3) & (TrialBox['HeatMid'] < 8)] #13
+        Box3 = TrialBox[(TrialBox['HeatMid'] > 13) & (TrialBox['HeatMid'] < 18)] #23
+        Box4 = TrialBox[(TrialBox['HeatMid'] > 23) & (TrialBox['HeatMid'] < 28)] #33
+        Box5 = TrialBox[(TrialBox['HeatMid'] > 33) & (TrialBox['HeatMid'] < 38)] #43
+        Box6 = TrialBox[(TrialBox['HeatMid'] > 43) & (TrialBox['HeatMid'] < 48)] #53
+        Box7 = TrialBox[(TrialBox['HeatMid'] > 53) & (TrialBox['HeatMid'] < 58)] #63
+
+        Box0_5 = TrialBox[(TrialBox['HeatMid'] > -12) & (TrialBox['HeatMid'] < -7)]
+        Box1_5 = TrialBox[(TrialBox['HeatMid'] > -2) & (TrialBox['HeatMid'] < 3)]
+        Box2_5 = TrialBox[(TrialBox['HeatMid'] > 8) & (TrialBox['HeatMid'] < 13)]
+        Box3_5 = TrialBox[(TrialBox['HeatMid'] > 18) & (TrialBox['HeatMid'] < 23)]
+        Box4_5 = TrialBox[(TrialBox['HeatMid'] > 28) & (TrialBox['HeatMid'] < 33)]
+        Box5_5 = TrialBox[(TrialBox['HeatMid'] > 38) & (TrialBox['HeatMid'] < 43)]
+        Box6_5 = TrialBox[(TrialBox['HeatMid'] > 48) & (TrialBox['HeatMid'] < 53)]
+        Box7_5 = TrialBox[(TrialBox['HeatMid'] > 58) & (TrialBox['HeatMid'] < 63)]
+        axs[i,j].boxplot([Box0['phiPSIImax'], Box1['phiPSIImax'], Box2['phiPSIImax'], Box3['phiPSIImax'],
+                          Box4['phiPSIImax'], Box5['phiPSIImax'], Box6['phiPSIImax'], Box7['phiPSIImax'],
+                          Box0_5['phiPSIImax'], Box1_5['phiPSIImax'], Box2_5['phiPSIImax'], Box3_5['phiPSIImax'],
+                          Box4_5['phiPSIImax'], Box5_5['phiPSIImax'], Box6_5['phiPSIImax'], Box7_5['phiPSIImax']],
+                          positions=(-14.5, -4.5, 5.5, 15.5, 25.5, 35.5, 45.5, 55.5,
+                                     -9.5, 0.5, 10.5, 20.5, 30.5, 40.5, 50.5, 60.5), widths=5)

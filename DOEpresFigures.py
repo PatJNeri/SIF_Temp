@@ -1,4 +1,17 @@
 # %%
+def get_Mod_paramsValues(output):
+        """Getting out values of model params with numerical values
+        Produces a dataframe of param names and values """
+        Var_list = output.var_names
+        frame = []
+        for n in range(len(Var_list)):
+                vari = output.params[Var_list[n]]
+                vari_split = str(vari).split()
+                vari_value = vari_split[2].split('=')
+                frame.append((Var_list[n], float(vari_value[1][:-1])))
+        Paramet = pd.DataFrame(frame, columns=['name', 'val'])
+        return Paramet
+
 def get_setdata_plotttt(dataset):
         """ Pick a chosen dataset that has a HeatMid column and phiPSIImax column"""
         Ordered = dataset.sort_values(by='HeatMid')
