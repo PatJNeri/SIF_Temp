@@ -426,12 +426,14 @@ def crossmodelPDF(data, width=5):
     for i in range(0, intboxes):
         minm = minstart + i*width
         maxm = maxstart + i*width
-        spread = regiondata(data['HeatMid'], minm, maxm)
+        spread = regiondata(data, minm, maxm)
+        (n, bins, patches) = plt.hist(spread['phiPSIImax'])
+        print(n, bins)
 
 
 # %%
 # Produce a PFT spread plot
-fig, axs = plt.subplots(ncols=4, nrows=4, constrained_layout=True)
+fig, axs = plt.subplots(ncols=4, nrows=4, constrained_layout=True, figsize=(8,8))
 for i in range(0,4):
     for j in range(0,4):
         pft = 4*i + j + 1
@@ -446,8 +448,8 @@ for i in range(0,4):
         pars['amplitude'].set(value=0.8, min=0.78, max=0.93)
         pars['center1'].set(value=-6, min=-12, max=7)
         pars['center2'].set(value=40, min=35, max=57)
-        pars['sigma1'].set(value=7, min=1, max=12)
-        pars['sigma2'].set(value=5, min=1, max=12)
+        pars['sigma1'].set(value=7, min=1, max=16)
+        pars['sigma2'].set(value=5, min=1, max=16)
         out = mod.fit(y, pars, x=x)
         ps = get_Mod_paramsValues(out)
         A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  

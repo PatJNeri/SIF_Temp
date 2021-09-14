@@ -1015,3 +1015,12 @@ resultsTry.plot_fit()
 plt.show()
 print(resultsTry.fit_report())
 # %%
+# Attempting to produce a heat-map style plot of all data
+trial = plt.hist2d(PSIIContr['HeatMid'], PSIIContr['phiPSIImax'],
+                   bins=[60,30], density=False, norm=colors.LogNorm())
+
+fig, ax = plt.subplots(figsize=(9, 6),
+                        subplot_kw={'xticks': [], 'yticks': []})
+ax.imshow(trial[0], interpolation='gaussian', cmap='jet')
+plt.show()
+# %%
