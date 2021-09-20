@@ -165,7 +165,7 @@ def PFT_numbers(PFTdataset):
 # Pull in all relevent documents here
 print(os.getcwd())
 PSIImaster = pd.read_excel('PSIImax-Master2-24.xlsx')
-ModelFits = pd.read_excel('PSIImodelfits6-14.xlsx')
+#ModelFits = pd.read_excel('PSIImodelfits6-14.xlsx')
 # Adjustments to Clade, Order, Family columns
 PSIImaster['Clade A'] = PSIImaster['Clade A'].astype(str)
 PSIImaster['Clade B'] = PSIImaster['Clade B'].astype(str)
