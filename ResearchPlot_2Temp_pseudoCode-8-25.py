@@ -236,19 +236,20 @@ i = input('chose a PFT')
 print('This run is for Adjusted PFT ' + str(i))
 Phunction_Name_Here(PSIIContr[PSIIContr['Adjusted PFT'] == i])
 # %%
-A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
-# produces dataset for r-squared
-Aa1 = (x - m1)/s1
-Aaa1 = []
-for i in range(len(Aa1)):
-    Aaa1.append(math.erf(Aa1.iloc[i]))
-Aa2 = -(x - m2)/s2
-Aaa2 = []
-for i in range(len(Aa2)):
-    Aaa2.append(math.erf(Aa2.iloc[i]))
-Ayy = []
+def modelshape_forplot(x, param):
+    A, m1, s1, m2, s2 = param[0], param[1], param[2], param[3], param[4] 
+    Aa1 = (x - m1)/s1
+    Aaa1 = []
+    for i in range(len(Aa1)):
+        Aaa1.append(math.erf(Aa1[i]))
+    Aa2 = -(x - m2)/s2
+    Aaa2 = []
+    for i in range(len(Aa2)):
+        Aaa2.append(math.erf(Aa2[i]))
+    Ayy = []
     for i in range(len(Aaa1)):
-Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
+        Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
+    return Ayy
 
 # %%
 # 9-2-21
@@ -545,19 +546,21 @@ ax4.yaxis.set_visible(False)
 # %%
 # Produces 4 time series side-by-side plot
 pftnum = input('Enter PFT (1 - 16)')
-timedata = PSIIContr[PSIIContr['Adjusted PFT'] == int(pftnum)].sort_values(by='HeatMid')
+timedata = PSIIContr.sort_values(by='HeatMid')
+print('Total PFT data amount - ' + str(len(timedata['HeatMid'])))
 fig, axs = plt.subplots(ncols=4, nrows=1, constrained_layout=True, figsize=(18,5))
 for i in range(0, 3):
-    Ordered = timedata[timedata['timetime'] == (i+1)]
-    if len(Ordered['HeatMid']) == 0:
-        axs[i].text(0.5, 0.5, "No Data", va="center", ha="center")
+    timedata1 = timedata[timedata['Climate'] == 0]
+    Ordered = timedata1[timedata1['timetime'] == (i+1)]
+    if len(Ordered['HeatMid']) < 6:
+        axs[i].text(0.5, 0.5, "Not Enough Data", va="center", ha="center")
         axs[i].set_title('PFT ' + str(pftnum) + '  t=' + str(i+1), loc='left')
     else:
         x = Ordered['HeatMid']
         x0 = x.iloc[:]
         y = Ordered['phiPSIImax']
         y0 = y.iloc[:]
-        axs[i].set_title('PFT ' + str(pftnum) + '  t=' + str(i+1), loc='left')
+        axs[i].set_title('PFT ' + str(pftnum) + '  t=' + str(i+1) + '   n = ' + str(len(x)), loc='left')
         mod = RectangleModel(form='erf')
         pars = mod.guess(y0, x=x0)
         pars['amplitude'].set(value=0.8, min=0.78, max=0.93)
@@ -567,6 +570,8 @@ for i in range(0, 3):
         pars['sigma2'].set(value=5, min=1, max=12)
         out = mod.fit(y, pars, x=x)
         ps = get_Mod_paramsValues(out)
+        print('For t = ' + str(i+1))
+        print(ps)
         A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
         # produces dataset for r-squared
         Aa1 = (x - m1)/s1
@@ -585,7 +590,7 @@ for i in range(0, 3):
         r_squared = correlation_xy**2
         axs[i].set_title('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), loc='right')
         # Below is the attempt at formatting a boxplot figure (can be optimized)
-        TrialBox = timedata[timedata['timetime'] == i+1]
+        TrialBox = timedata1[timedata1['timetime'] == i+1]
         Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -12)] #-7
         Box1 = TrialBox[(TrialBox['HeatMid'] > -7) & (TrialBox['HeatMid'] < -2)] #3
         Box2 = TrialBox[(TrialBox['HeatMid'] > 3) & (TrialBox['HeatMid'] < 8)] #13
@@ -639,7 +644,7 @@ else:
     x0 = x.iloc[:]
     y = OrderedClim['phiPSIImax']
     y0 = y.iloc[:]
-    axs[3].set_title('PFT ' + str(pftnum) + ' Climate Data', loc='left')
+    axs[3].set_title('PFT ' + str(pftnum) + ' Climate Data   n = ' + str(len(x)), loc='left')
     mod = RectangleModel(form='erf')
     pars = mod.guess(y0, x=x0)
     pars['amplitude'].set(value=0.8, min=0.78, max=0.93)
@@ -649,6 +654,9 @@ else:
     pars['sigma2'].set(value=5, min=1, max=12)
     out = mod.fit(y, pars, x=x)
     ps = get_Mod_paramsValues(out)
+    print('For Climate = 1')
+    print(len(x))
+    print(ps)
     A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
     # produces dataset for r-squared
     Aa1 = (x - m1)/s1
