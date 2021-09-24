@@ -262,6 +262,13 @@ def get_setdata_plot(dataset):
 
                 # Here the residual of the dataset is calculated
                 resid = (y - Ayy)
+                # Generate the RMSE
+                test2 = np.zeros(len(resid))
+                for i in range(0,len(resid)):
+                    test2[i] = resid[i]**2
+                RMSE = (np.sum(test2)/len(resid))**0.5
+                print('RMSE : ', RMSE)
+
                 # Below is a histogram of the residual values
                 fig = plt.figure(figsize=(6, 3))
                 gs = fig.add_gridspec(2, 2,  width_ratios=(7, 2), height_ratios=(2, 7),

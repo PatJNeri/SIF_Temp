@@ -720,3 +720,48 @@ else:
     axs[3].set_xticklabels((-20,0,20,40,60))
 axs[3].grid(True)
 # %%
+# Plot of the Predicted values versus the Observed values
+# May try and make the color of the dot equal to the temperature???
+fig, axs = plt.subplots(ncols=4, nrows=4, constrained_layout=True, figsize=(16,16))
+for i in range(0,4):
+    for j in range(0,4):
+        pft = 4*i + j + 1
+        Ordered = PSIIContr[PSIIContr['Adjusted PFT'] == pft].sort_values(by='HeatMid')
+        x = Ordered['HeatMid']
+        x0 = x.iloc[:]
+        y = Ordered['phiPSIImax']
+        y0 = y.iloc[:]
+        axs[i,j].set_title('PFT ' + str(pft), loc='left')
+        mod = RectangleModel(form='erf')
+        pars = mod.guess(y0, x=x0)
+        pars['amplitude'].set(value=0.8, min=0.78, max=0.93)
+        pars['center1'].set(value=-6, min=-12, max=7)
+        pars['center2'].set(value=40, min=35, max=57)
+        pars['sigma1'].set(value=7, min=1, max=12)
+        pars['sigma2'].set(value=5, min=1, max=12)
+        out = mod.fit(y, pars, x=x)
+        ps = get_Mod_paramsValues(out)
+        A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
+        # produces dataset for r-squared
+        Aa1 = (x - m1)/s1
+        Aaa1 = []
+        for q in range(len(Aa1)):
+            Aaa1.append(math.erf(Aa1.iloc[q]))
+        Aa2 = -(x - m2)/s2
+        Aaa2 = []
+        for q in range(len(Aa2)):
+            Aaa2.append(math.erf(Aa2.iloc[q]))
+        Ayy = []
+        for q in range(len(Aaa1)):
+            Ayy.append((A/2)* (Aaa1[q] + Aaa2[q]))
+        correlation_matrix = np.corrcoef(y, Ayy)
+        correlation_xy = correlation_matrix[0,1]
+        r_squared = correlation_xy**2
+        axs[i,j].set_title('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), loc='right')
+        axs[i,j].set_xlabel('Observed Fv/Fm')
+        axs[i,j].set_ylabel('Predicted Fv/Fm')
+        x2 = np.linspace(0, 1, 500)
+        axs[i,j].plot(y, Ayy, 'ro')
+        axs[i,j].plot(x2, x2, '-k')
+        axs[i,j].grid(True)
+# %%
