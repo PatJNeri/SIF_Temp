@@ -81,7 +81,6 @@ PSIIGEO['lat_split'] = PSIIGEO['GEO']
 PSIIGEO['lon_split'] = PSIIGEO['GEO']
 potent_error = []
 for i in range(0, len(PSIIGEO['GEO'])):
-    print(i)
     if len(str(PSIIGEO['GEO'].iloc[i]).split(',')) == 2:
         PSIIGEO['lat_split'].iloc[i] = str(PSIIGEO['GEO'].iloc[i]).split(',')[0]
         PSIIGEO['lon_split'].iloc[i] = str(PSIIGEO['GEO'].iloc[i]).split(',')[1]
@@ -90,11 +89,9 @@ for i in range(0, len(PSIIGEO['GEO'])):
 
 PSIIGEO['lat_num'] = PSIIGEO['lat_split']
 for i in range(0, len(PSIIGEO['GEO'])):
-    print(i)
     setnums = re.split('[°\'"]', PSIIGEO['lat_split'].iloc[i])
-    print(setnums)
     if len(setnums) == 2:
-        PSIIGEO['lat_num'].iloc[i] == (float(setnums[0])) * (-1 if setnums[1] in ['W', 'S', ' W', ' S'] else 1)
+        PSIIGEO['lat_num'].iloc[i] = (float(setnums[0])) * (-1 if setnums[1] in ['W', 'S', ' W', ' S'] else 1)
     elif len(setnums) == 3:
         PSIIGEO['lat_num'].iloc[i] = (float(setnums[0]) + float(setnums[1])/60) * (-1 if setnums[2] in ['W', 'S', ' W', ' S'] else 1)
     elif len(setnums) == 4:
@@ -102,28 +99,51 @@ for i in range(0, len(PSIIGEO['GEO'])):
 
 PSIIGEO['lon_num'] = PSIIGEO['lon_split']
 for i in range(0, len(PSIIGEO['GEO'])):
-    print(i)
     setnums = re.split('[°\'"]', PSIIGEO['lon_split'].iloc[i])
-    print(setnums)
     if len(setnums) == 2:
-        PSIIGEO['lon_num'].iloc[i] == (float(setnums[0])) * (-1 if setnums[1] in ['W', 'S', ' W', ' S'] else 1)
+        PSIIGEO['lon_num'].iloc[i] = (float(setnums[0])) * (-1 if setnums[1] in ['W', 'S', ' W', ' S'] else 1)
     elif len(setnums) == 3:
         PSIIGEO['lon_num'].iloc[i] = (float(setnums[0]) + float(setnums[1])/60) * (-1 if setnums[2] in ['W', 'S', ' W', ' S'] else 1)
     elif len(setnums) == 4:
         PSIIGEO['lon_num'].iloc[i] = (float(setnums[0]) + float(setnums[1])/60 + float(setnums[2])/(60*60)) * (-1 if setnums[3] in ['W', 'S', ' W', ' S'] else 1)        
 # %%
 # Here we need to plot them
+# Finally fixed!!!
 
 ax = plt.axes(projection=ccrs.PlateCarree())
 for i in range(0, len(PSIIGEO['GEO'])):
-    print(i)
     ax.plot(PSIIGEO['lon_num'].iloc[i], PSIIGEO['lat_num'].iloc[i], 'bo', markersize=2)
-#    ax.text(float(PSIIGEO['lon_num'].iloc[i]) + 0.01, float(PSIIGEO['lat_num'].iloc[i]) - 0.01, PSIIGEO['paper'].iloc[i], transform=ccrs.PlateCarree())
+    #ax.text(float(PSIIGEO['lon_num'].iloc[i]) + 0.01, float(PSIIGEO['lat_num'].iloc[i]) - 0.01, PSIIGEO['paper'].iloc[i], transform=ccrs.PlateCarree())
 
 #ax.coastlines(color='black')
 ax.stock_img()
 plt.show()
 # %%
-np.unique(PSIIGEO[''])
+for i in range(0, len(PSIIGEO['lat_num'])):
+    PSIIGEO['latlon'].iloc[i] = (str(PSIIGEO['lat_num'].iloc[i]) + ', ' + str(PSIIGEO['lon_num'].iloc[i]))
 # %%
+g = pd.DataFrame()
+locations = []
+isss = []
+for i in range(0, len(PSIIGEO['latlon'])):
+    if PSIIGEO['latlon'].iloc[i] in locations:
+        continue
+    else:
+        locations.append(PSIIGEO['latlon'].iloc[i])
+        isss.append(i)
+
 # %%
+# Ensure that all the locations are captured, and by this, all the necessary Data
+print(len(locations) == len(np.unique(PSIIGEO['latlon'])))
+for locs in locations:
+    if locs in np.unique(PSIIGEO['latlon']):
+        continue
+    else:
+        print(locs, 'Not represented') 
+
+# Now make a new dataframe with just the rows of unique locations
+# https://stackoverflow.com/questions/34682828/extracting-specific-selected-columns-to-new-dataframe-as-a-copy
+f = PSIIGEO.filter(isss, axis=0)
+
+# Generate a csv out of this new dataframe
+# https://towardsdatascience.com/how-to-export-pandas-dataframe-to-csv-2038e43d9c03
