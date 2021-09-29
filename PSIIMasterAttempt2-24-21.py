@@ -241,7 +241,7 @@ def get_setdata_plot(dataset):
         out = mod.fit(y, pars, x=x)
         ModelChoice = 'Rect' #input('Chose between [Quad, Rect] or [Both] models:')
         if ModelChoice == 'Rect':
-                print('You have chosen Rectangle model for the ', dataset.name, 'dataset.')
+                print('You have chosen Rectangle model') # for the ', dataset.name, 'dataset.')
                 print(out.fit_report())
                 ps = get_Mod_paramsValues(out)
                 print(ps.val[:])
@@ -262,10 +262,13 @@ def get_setdata_plot(dataset):
 
                 # Here the residual of the dataset is calculated
                 resid = (y - Ayy)
+                # Generate the mean absolute error
+                MAE = (np.sum(abs(resid))/len(resid))
+                print('MAE : ', MAE)
                 # Generate the RMSE
                 test2 = np.zeros(len(resid))
                 for i in range(0,len(resid)):
-                    test2[i] = resid[i]**2
+                    test2[i] = float(resid.iloc[i])**2
                 RMSE = (np.sum(test2)/len(resid))**0.5
                 print('RMSE : ', RMSE)
 
@@ -1030,4 +1033,18 @@ fig, ax = plt.subplots(figsize=(9, 6),
                         subplot_kw={'xticks': [], 'yticks': []})
 ax.imshow(trial[0], interpolation='gaussian', cmap='jet')
 plt.show()
+# %%
+import random
+print(random.sample(list(PSIIContr['phiPSIImax']), 7))
+# Important to note that sampling must be a list
+# Concept: 
+# 1) Set temp bin size (5C, 10C, etc.)
+#    in this version, you could segment using the same system that was
+#    used in creating the boxplot figure.
+#    Then use the random.sample method to select a number of elements
+#    that get specified by making a range(0, len(inbin)) sample.
+#    Then call those values to a new dataframe and run the model.
+#    Take quality of fit metric and record it. (w/ bin, nsamples)
+#    Aggregate all these metrics and make a histogram
+#    Use stats on the histogram to learn about the form of the model.
 # %%
