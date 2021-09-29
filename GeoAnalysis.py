@@ -74,6 +74,7 @@ for i in range(len(PSIIContr['Time (h)'])):
 # drop bad data options
 NewSet = PSIIContr.drop([250,251,252,253,1502,1503,1504,1505,1506,1507,1508,1509,1510,1511], axis=0)
 PSIIGEO = NewSet[NewSet['GEO'].notna() == True]
+PSIIGEO['index'] = PSIIGEO.index
 print(np.unique(PSIIGEO['paper']))
 # %%
 # Here we need to formalize and split 'GEO' values to lat and lon
@@ -119,6 +120,7 @@ for i in range(0, len(PSIIGEO['GEO'])):
 ax.stock_img()
 plt.show()
 # %%
+PSIIGEO['latlon'] = PSIIGEO['lon_num']
 for i in range(0, len(PSIIGEO['lat_num'])):
     PSIIGEO['latlon'].iloc[i] = (str(PSIIGEO['lat_num'].iloc[i]) + ', ' + str(PSIIGEO['lon_num'].iloc[i]))
 # %%
@@ -144,6 +146,9 @@ for locs in locations:
 # Now make a new dataframe with just the rows of unique locations
 # https://stackoverflow.com/questions/34682828/extracting-specific-selected-columns-to-new-dataframe-as-a-copy
 f = PSIIGEO.filter(isss, axis=0)
-
+f1 = PSIIGEO[np.any(PSIIGEO['index'] in isss) == True]
+f2 = PSIIGEO.loc[isss,:]
 # Generate a csv out of this new dataframe
 # https://towardsdatascience.com/how-to-export-pandas-dataframe-to-csv-2038e43d9c03
+f.to_csv('c:/Users/PJN89/Desktop/f.csv', na_rep='Unkown')
+# %%

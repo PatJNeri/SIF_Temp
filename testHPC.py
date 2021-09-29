@@ -2,6 +2,7 @@
 # Neri 9-26-21
 
 # %%
+from GeoAnalysis import PSIIGEO
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,7 +13,7 @@ from netCDF4 import Dataset
 # %%
 print(os.getcwd())
 
-#data10 = xr.load_dataset('clmforc.cruncep.V7.c2016.0.5d.Prec.2016-10.nc')
+data10 = xr.load_dataset('c:/Users/PJN89/Desktop/clmforc.cruncep.V7.c2016.0.5d.Prec.2016-10.nc')
 
 # %%
 # Practice for pulling from a different directory
@@ -74,4 +75,10 @@ plt.contourf(lons, lats, sst, 60,
 ax.coastlines()
 
 plt.show()
+# %%
+for i in range(1,17):
+    plt.plot(PSIIGEO['HeatMid'][PSIIGEO['Adjusted PFT'] == i],
+    PSIIGEO['phiPSIImax'][PSIIGEO['Adjusted PFT'] == i], 'o')
+    plt.title(i)
+    plt.show()
 # %%
