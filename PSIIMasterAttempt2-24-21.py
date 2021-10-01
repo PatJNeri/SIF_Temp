@@ -1047,4 +1047,150 @@ print(random.sample(list(PSIIContr['phiPSIImax']), 7))
 #    Take quality of fit metric and record it. (w/ bin, nsamples)
 #    Aggregate all these metrics and make a histogram
 #    Use stats on the histogram to learn about the form of the model.
+
+def carlo_stats(dataset):
+    Ordered = dataset.sort_values(by='HeatMid')
+    x = Ordered['HeatMid']
+    x0 = x.iloc[:]
+    y = Ordered['phiPSIImax']
+    y0 = y.iloc[:]
+    # Quad Model run
+    mod = RectangleModel(form='erf')
+    mod.set_param_hint('amplitude', value=0.8, min=0.75, max=0.9)
+    mod.set_param_hint('center1', value=-3, min=-15, max=10)
+    mod.set_param_hint('center2', value=45, min=15, max=60)
+    mod.set_param_hint('sigma1', value=7, min=1, max=12)
+    mod.set_param_hint('sigma2', value=7, min=1, max=12)
+    pars = mod.guess(y0, x=x0)
+    pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
+    pars['center1'].set(value=-6, min=-12, max=7)
+    pars['center2'].set(value=46, min=35, max=57)
+    pars['sigma1'].set(value=7, min=1, max=12)
+    pars['sigma2'].set(value=5, min=1, max=12)
+    out = mod.fit(y, pars, x=x)
+    ps = get_Mod_paramsValues(out)
+    A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
+    # produces dataset for r-squared
+    Aa1 = (x - m1)/s1
+    Aaa1 = []
+    for i in range(len(Aa1)):
+            Aaa1.append(math.erf(Aa1.iloc[i]))
+    Aa2 = -(x - m2)/s2
+    Aaa2 = []
+    for i in range(len(Aa2)):
+            Aaa2.append(math.erf(Aa2.iloc[i]))
+    Ayy = []
+    for i in range(len(Aaa1)):
+            Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
+    # get r2 score
+    r2score = r2_score(y, Ayy)
+    # Here the residual of the dataset is calculated
+    resid = (y - Ayy)
+    # Generate the mean absolute error
+    MAE = (np.sum(abs(resid))/len(resid))
+    # Generate the RMSE
+    test2 = np.zeros(len(resid))
+    for i in range(0,len(resid)):
+        test2[i] = float(resid.iloc[i])**2
+    RMSE = (np.sum(test2)/len(resid))**0.5
+    return [(r2score, MAE, RMSE, A, m1, s1, m2, s2)]
+# %%
+# Creating a 5C division
+TrialBox = PSIIContr.sort_values(by='HeatMid')
+Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -12)] 
+print('Box0: ', len(Box0['HeatMid']))
+Box1 = TrialBox[(TrialBox['HeatMid'] > -7) & (TrialBox['HeatMid'] < -2)] 
+print('Box1: ', len(Box1['HeatMid']))
+Box2 = TrialBox[(TrialBox['HeatMid'] > 3) & (TrialBox['HeatMid'] < 8)] 
+print('Box2: ', len(Box2['HeatMid']))
+Box3 = TrialBox[(TrialBox['HeatMid'] > 13) & (TrialBox['HeatMid'] < 18)] 
+print('Box3: ', len(Box3['HeatMid']))
+Box4 = TrialBox[(TrialBox['HeatMid'] > 23) & (TrialBox['HeatMid'] < 28)] 
+print('Box4: ', len(Box4['HeatMid']))
+Box5 = TrialBox[(TrialBox['HeatMid'] > 33) & (TrialBox['HeatMid'] < 38)] 
+print('Box5: ', len(Box5['HeatMid']))
+Box6 = TrialBox[(TrialBox['HeatMid'] > 43) & (TrialBox['HeatMid'] < 48)] 
+print('Box6: ', len(Box6['HeatMid']))
+Box7 = TrialBox[(TrialBox['HeatMid'] > 53) & (TrialBox['HeatMid'] < 58)] 
+print('Box7: ', len(Box7['HeatMid']))
+Box0_5 = TrialBox[(TrialBox['HeatMid'] > -12) & (TrialBox['HeatMid'] < -7)]
+print('Box0_5: ', len(Box0_5['HeatMid']))
+Box1_5 = TrialBox[(TrialBox['HeatMid'] > -2) & (TrialBox['HeatMid'] < 3)]
+print('Box1_5: ', len(Box1_5['HeatMid']))
+Box2_5 = TrialBox[(TrialBox['HeatMid'] > 8) & (TrialBox['HeatMid'] < 13)]
+print('Box2_5: ', len(Box2_5['HeatMid']))
+Box3_5 = TrialBox[(TrialBox['HeatMid'] > 18) & (TrialBox['HeatMid'] < 23)]
+print('Box3_5: ', len(Box3_5['HeatMid']))
+Box4_5 = TrialBox[(TrialBox['HeatMid'] > 28) & (TrialBox['HeatMid'] < 33)]
+print('Box4_5: ', len(Box4_5['HeatMid']))
+Box5_5 = TrialBox[(TrialBox['HeatMid'] > 38) & (TrialBox['HeatMid'] < 43)]
+print('Box5_5: ', len(Box5_5['HeatMid']))
+Box6_5 = TrialBox[(TrialBox['HeatMid'] > 48) & (TrialBox['HeatMid'] < 53)]
+print('Box6_5: ', len(Box6_5['HeatMid']))
+Box7_5 = TrialBox[(TrialBox['HeatMid'] > 58) & (TrialBox['HeatMid'] < 63)]
+print('Box7_5: ', len(Box7_5['HeatMid']))
+# Creating a random creation dataset
+boxlist = [Box0, Box1, Box2, Box3, Box4, Box5, Box6, Box7,
+           Box0_5, Box1_5, Box2_5, Box3_5, Box4_5, Box5_5, Box6_5, Box7_5]
+carlobox = pd.DataFrame()
+for i in range(0, len(boxlist)):
+    index = range(0, len(boxlist[i]))
+    sample = random.sample(index, int(len(boxlist[i])/2))
+    print(i)
+    boxdf = boxlist[i].reset_index()
+    newboxdf = boxdf.filter(items = sample, axis=0)
+    carlobox = carlobox.append(newboxdf, ignore_index=True)
+plt.plot(carlobox['HeatMid'], carlobox['phiPSIImax'], 'o')
+# %%
+# Creating a 10C division
+TrialBox = PSIIContr.sort_values(by='HeatMid')
+Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -7)]
+print('Box0: ', len(Box0['HeatMid']))
+Box1 = TrialBox[(TrialBox['HeatMid'] > -7) & (TrialBox['HeatMid'] < 3)]
+print('Box1: ', len(Box1['HeatMid']))
+Box2 = TrialBox[(TrialBox['HeatMid'] > 3) & (TrialBox['HeatMid'] < 13)]
+print('Box2: ', len(Box2['HeatMid']))
+Box3 = TrialBox[(TrialBox['HeatMid'] > 13) & (TrialBox['HeatMid'] < 23)]
+print('Box3: ', len(Box3['HeatMid']))
+Box4 = TrialBox[(TrialBox['HeatMid'] > 23) & (TrialBox['HeatMid'] < 33)]
+print('Box4: ', len(Box4['HeatMid']))
+Box5 = TrialBox[(TrialBox['HeatMid'] > 33) & (TrialBox['HeatMid'] < 43)]
+print('Box5: ', len(Box5['HeatMid']))
+Box6 = TrialBox[(TrialBox['HeatMid'] > 43) & (TrialBox['HeatMid'] < 53)]
+print('Box6: ', len(Box6['HeatMid']))
+Box7 = TrialBox[(TrialBox['HeatMid'] > 53) & (TrialBox['HeatMid'] < 63)]
+print('Box7: ', len(Box7['HeatMid']))
+
+# Creating a random creation dataset
+montefitvalues = pd.DataFrame()
+for j in range(0, 500):
+    print(j)
+    boxlist = [Box0, Box1, Box2, Box3, Box4, Box5, Box6, Box7]
+    carlobox = pd.DataFrame()
+    for i in range(0, len(boxlist)):
+        index = range(0, len(boxlist[i]))
+        sample = random.sample(index, int(len(boxlist[i])/3))
+        boxdf = boxlist[i].reset_index()
+        newboxdf = boxdf.filter(items = sample, axis=0)
+        carlobox = carlobox.append(newboxdf, ignore_index=True)
+    #plt.plot(carlobox['HeatMid'], carlobox['phiPSIImax'], 'o')
+    montefitvalues = montefitvalues.append(carlo_stats(carlobox))
+
+fig, axs = plt.subplots(1,5)
+axs[0].hist(montefitvalues[3], density=True)
+axs[0].set_title('A')
+axs[1].hist(montefitvalues[4], density=True)
+axs[1].set_title('M1')
+axs[2].hist(montefitvalues[5], density=True)
+axs[2].set_title('S1')
+axs[3].hist(montefitvalues[6], density=True)
+axs[3].set_title('M2')
+axs[4].hist(montefitvalues[7], density=True)
+axs[4].set_title('S2')
+# %%
+plt.plot(TrialBox['HeatMid'], TrialBox['phiPSIImax'], 'o', alpha=0.3)
+plt.boxplot([Box0['phiPSIImax'], Box1['phiPSIImax'], Box2['phiPSIImax'], Box3['phiPSIImax'],
+             Box4['phiPSIImax'], Box5['phiPSIImax'], Box6['phiPSIImax'], Box7['phiPSIImax']],
+             positions=(-12, -2, 8, 18, 28, 38, 48, 58), 
+             labels=(0, 1, 2, 3, 4, 5 ,6, 7), widths=10)
 # %%
