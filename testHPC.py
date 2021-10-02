@@ -2,7 +2,7 @@
 # Neri 9-26-21
 
 # %%
-from GeoAnalysis import PSIIGEO
+#from GeoAnalysis import PSIIGEO
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -25,15 +25,16 @@ os.path.exists("c:/Users/PJN89/temp_git/PSIImax-Master2-24.xlsx")
 # Eventual goal cd file
 PSIImaster = pd.read_excel(os.path.join(path, 'PSIImax-Master2-24.xlsx'), engine='openpyxl')
 
+
 # %%
 # Run thru for Precip6hourly
-
-
+print(os.getcwd())
+os.path.exists("c:/Users/pjneri/Desktop/clmforc.cruncep.V7.c2016.0.5d.Prec.2016-12.nc")
 # %%
-for i in range(10, 13):
+for i in range(12, 13):
     name = "ds" + str(i)
     print(name)
-    name = xr.load_dataset('clmforc.cruncep.V7.c2016.0.5d.Prec.2016-' + str(i) + '.nc')
+    name = xr.load_dataset('c:/Users/pjneri/Desktop/clmforc.cruncep.V7.c2016.0.5d.Prec.2016-' + str(i) + '.nc')
 # %%
 # https://gis.stackexchange.com/questions/327921/extracting-lat-long-numeric-value-of-one-pixel-for-all-variables-in-netcdf4
 
@@ -82,3 +83,5 @@ for i in range(1,17):
     plt.title(i)
     plt.show()
 # %%
+Trialfile = pd.DataFrame()
+Trialfile['location1'] = name.variables['PRECTmms'][:]
