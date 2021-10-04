@@ -3,7 +3,7 @@
 # 9-19-21
 # Patrick Neri
 # %%
-# Currently running on hastools2
+# Currently running on hastools2, Outputs Locs File 'f.csv'
 from matplotlib import transforms
 import pandas as pd
 import numpy as np
@@ -120,11 +120,18 @@ for i in range(0, len(PSIIGEO['GEO'])):
 ax.stock_img()
 plt.show()
 # %%
+# generating a uniform string that can be more easily checked against other locations
 PSIIGEO['latlon'] = PSIIGEO['lon_num']
 for i in range(0, len(PSIIGEO['lat_num'])):
     PSIIGEO['latlon'].iloc[i] = (str(PSIIGEO['lat_num'].iloc[i]) + ', ' + str(PSIIGEO['lon_num'].iloc[i]))
+
+# IMPORTANT!!
+# The method used below may not work if 2 locations are listed identical
+# but come from different sources. Need a more wholistic method to 
+# avoid this issue.
+
 # %%
-g = pd.DataFrame()
+# Make lists that can be checked (potentially not necessary)
 locations = []
 isss = []
 for i in range(0, len(PSIIGEO['latlon'])):
@@ -143,11 +150,14 @@ for locs in locations:
     else:
         print(locs, 'Not represented') 
 
+# %%
 # Now make a new dataframe with just the rows of unique locations
 # https://stackoverflow.com/questions/34682828/extracting-specific-selected-columns-to-new-dataframe-as-a-copy
+# Resetting the index here to make appropiate call
+PSIIGEO = PSIIGEO.reset_index(drop=True)
+# Both these methods work, will use the first one for now
 f = PSIIGEO.filter(isss, axis=0)
-f1 = PSIIGEO[np.any(PSIIGEO['index'] in isss) == True]
-f2 = PSIIGEO.loc[isss,:]
+#f1 = PSIIGEO[PSIIGEO.index.isin(isss)]
 # Generate a csv out of this new dataframe
 # https://towardsdatascience.com/how-to-export-pandas-dataframe-to-csv-2038e43d9c03
 f.to_csv('c:/Users/PJN89/Desktop/f.csv', na_rep='Unkown')

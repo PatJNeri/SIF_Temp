@@ -2,18 +2,36 @@
 # Neri 9-26-21
 
 # %%
-#from GeoAnalysis import PSIIGEO
+# from GeoAnalysis import PSIIGEO
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import xarray as xr
 from netCDF4 import Dataset
+# https://github.com/nco/pynco
+# https://joehamman.com/2014/01/29/Python-Bindings-for-NCO/
+# https://linux.die.net/man/1/ncks
+# http://nco.sourceforge.net/nco.html#ncks
+from nco import Nco
 
 # %%
+def coord_round(x):
+    return ((round((x-0.25)*4)/4) + 0.25)
+
+def improve_coord(x):
+    if x > round(x):
+        return (round(x) + 0.25)
+    else:
+        return (round(x) - 0.25)
+
+# %%
+# direct import first trial no loop files
+#nco = Nco()
 print(os.getcwd())
 
 data10 = xr.load_dataset('c:/Users/PJN89/Desktop/clmforc.cruncep.V7.c2016.0.5d.Prec.2016-10.nc')
+locations = pd.read_csv('c:/Users/PJN89/Desktop/f.csv')
 
 # %%
 # Practice for pulling from a different directory
@@ -25,41 +43,17 @@ os.path.exists("c:/Users/PJN89/temp_git/PSIImax-Master2-24.xlsx")
 # Eventual goal cd file
 PSIImaster = pd.read_excel(os.path.join(path, 'PSIImax-Master2-24.xlsx'), engine='openpyxl')
 
-
 # %%
 # Run thru for Precip6hourly
 print(os.getcwd())
-os.path.exists("c:/Users/pjneri/Desktop/clmforc.cruncep.V7.c2016.0.5d.Prec.2016-12.nc")
+os.path.exists("c:/Users/PJN89/Desktop/clmforc.cruncep.V7.c2016.0.5d.Prec.2016-12.nc")
 # %%
-for i in range(12, 13):
+for i in range(10, 13):
     name = "ds" + str(i)
     print(name)
-    name = xr.load_dataset('c:/Users/pjneri/Desktop/clmforc.cruncep.V7.c2016.0.5d.Prec.2016-' + str(i) + '.nc')
+    name = xr.load_dataset('c:/Users/PJN89/Desktop/clmforc.cruncep.V7.c2016.0.5d.Prec.2016-' + str(i) + '.nc')
 # %%
 # https://gis.stackexchange.com/questions/327921/extracting-lat-long-numeric-value-of-one-pixel-for-all-variables-in-netcdf4
-
-def ExtractVarsFromNetcdf(x_coord, y_coord, ncdir, varnames):
-    """   
-    @params:
-        x_coord    - Required : the x coordinate of the point
-        x_coord    - Required : the y coordinate of the point
-        ncdir      - Required : The directory of the netcdf file.
-        varnames   - Required : The netcdf variables
-    """
-
-    with Dataset(ncdir, "r") as nc:
-
-        # Get the nc lat and lon from the point's x, y
-        lon = nc.variables["lon"][int(round(x_coord))]
-        lat = nc.variables["lat"][int(round(y_coord))]
-
-        # Return a np.array with the netcdf data
-        nc_data = np.ma.getdata(
-            [nc.variables[varname][:, x_coord, y_coord] for varname in varnames]
-        )
-
-        return nc_data, lon, lat
-        
 
 # %%
 # https://scitools.org.uk/cartopy/docs/v0.11/matplotlib/advanced_plotting.html
@@ -84,4 +78,11 @@ for i in range(1,17):
     plt.show()
 # %%
 Trialfile = pd.DataFrame()
-Trialfile['location1'] = name.variables['PRECTmms'][:]
+Trialfile['time'] = data10.coords["time"][:]
+for i in range(1,35):
+    print(i)
+    name = 'location ' + str(i)
+    lat_ind = int((improve_coord(f['lat_num'].iloc[i]) + 89.75)/0.5)
+    lon_ind = int((improve_coord(f['lon_num'].iloc[i]) + 179.75)/0.5)
+    Trialfile[name] = data10.variables['PRECTmms'][:, lat_ind, lon_ind]
+# %%
