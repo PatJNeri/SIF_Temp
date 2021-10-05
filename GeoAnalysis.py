@@ -160,5 +160,5 @@ f = PSIIGEO.filter(isss, axis=0)
 #f1 = PSIIGEO[PSIIGEO.index.isin(isss)]
 # Generate a csv out of this new dataframe
 # https://towardsdatascience.com/how-to-export-pandas-dataframe-to-csv-2038e43d9c03
-f.to_csv('c:/Users/PJN89/Desktop/f.csv', na_rep='Unkown')
+f.to_csv('c:/Users/pjneri/Desktop/f.csv', na_rep='Unknown')
 # %%

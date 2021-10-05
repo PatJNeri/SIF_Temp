@@ -1176,7 +1176,25 @@ for j in range(0, 500):
     #plt.plot(carlobox['HeatMid'], carlobox['phiPSIImax'], 'o')
     montefitvalues = montefitvalues.append(carlo_stats(carlobox))
 
-fig, axs = plt.subplots(1,5)
+x = np.linspace(0,500, 500)
+for i in range(0,8):
+    plt.hist(montefitvalues[i])
+    plt.title(str(i))
+    plt.show()
+# %%
+plt.plot(TrialBox['HeatMid'], TrialBox['phiPSIImax'], 'o', alpha=0.3)
+plt.boxplot([Box0['phiPSIImax'], Box1['phiPSIImax'], Box2['phiPSIImax'], Box3['phiPSIImax'],
+             Box4['phiPSIImax'], Box5['phiPSIImax'], Box6['phiPSIImax'], Box7['phiPSIImax']],
+             positions=(-12, -2, 8, 18, 28, 38, 48, 58), 
+             labels=(0, 1, 2, 3, 4, 5 ,6, 7), widths=10)
+
+# %%
+plt.plot(x, montefitvalues[5], 'o')
+plt.yscale('log')
+plt.ylim(0,12)
+plt.grid(True)
+# %%
+fig, axs = plt.subplots(5,1)
 axs[0].hist(montefitvalues[3], density=True)
 axs[0].set_title('A')
 axs[1].hist(montefitvalues[4], density=True)
@@ -1187,10 +1205,3 @@ axs[3].hist(montefitvalues[6], density=True)
 axs[3].set_title('M2')
 axs[4].hist(montefitvalues[7], density=True)
 axs[4].set_title('S2')
-# %%
-plt.plot(TrialBox['HeatMid'], TrialBox['phiPSIImax'], 'o', alpha=0.3)
-plt.boxplot([Box0['phiPSIImax'], Box1['phiPSIImax'], Box2['phiPSIImax'], Box3['phiPSIImax'],
-             Box4['phiPSIImax'], Box5['phiPSIImax'], Box6['phiPSIImax'], Box7['phiPSIImax']],
-             positions=(-12, -2, 8, 18, 28, 38, 48, 58), 
-             labels=(0, 1, 2, 3, 4, 5 ,6, 7), widths=10)
-# %%
