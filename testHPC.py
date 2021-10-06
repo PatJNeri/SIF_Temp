@@ -42,6 +42,8 @@ def location_values(ncdir, f):
 #nco = Nco()
 print(os.getcwd())
 
+data7 = xr.load_dataset('c:/Users/pjneri/Desktop/clmforc.cruncep.V7.c2016.0.5d.Solr.2016-12.nc')
+data9 = xr.load_dataset('c:/Users/pjneri/Desktop/clmforc.cruncep.V7.c2016.0.5d.TPQWL.2016-12.nc')
 data10 = xr.load_dataset('c:/Users/pjneri/Desktop/clmforc.cruncep.V7.c2016.0.5d.Prec.2016-10.nc')
 locations = pd.read_csv('c:/Users/pjneri/Desktop/f.csv')
 

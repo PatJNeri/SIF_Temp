@@ -234,9 +234,9 @@ def get_setdata_plot(dataset):
         mod.set_param_hint('sigma2', value=7, min=1, max=12)
         pars = mod.guess(y0, x=x0)
         pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
-        pars['center1'].set(value=-6, min=-12, max=7)
+        pars['center1'].set(value=-6, min=-23, max=7)
         pars['center2'].set(value=46, min=35, max=57)
-        pars['sigma1'].set(value=7, min=1, max=12)
+        pars['sigma1'].set(value=7, min=1, max=25)
         pars['sigma2'].set(value=5, min=1, max=12)
         out = mod.fit(y, pars, x=x)
         ModelChoice = 'Rect' #input('Chose between [Quad, Rect] or [Both] models:')
@@ -271,7 +271,8 @@ def get_setdata_plot(dataset):
                     test2[i] = float(resid.iloc[i])**2
                 RMSE = (np.sum(test2)/len(resid))**0.5
                 print('RMSE : ', RMSE)
-
+                cv = ((RMSE)**2)/np.mean(y)
+                print('CV: ', cv)
                 # Below is a histogram of the residual values
                 fig = plt.figure(figsize=(6, 3))
                 gs = fig.add_gridspec(2, 2,  width_ratios=(7, 2), height_ratios=(2, 7),
@@ -1063,9 +1064,9 @@ def carlo_stats(dataset):
     mod.set_param_hint('sigma2', value=7, min=1, max=12)
     pars = mod.guess(y0, x=x0)
     pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
-    pars['center1'].set(value=-6, min=-12, max=7)
+    pars['center1'].set(value=-6, min=-23, max=7)
     pars['center2'].set(value=46, min=35, max=57)
-    pars['sigma1'].set(value=7, min=1, max=12)
+    pars['sigma1'].set(value=7, min=1, max=25)
     pars['sigma2'].set(value=5, min=1, max=12)
     out = mod.fit(y, pars, x=x)
     ps = get_Mod_paramsValues(out)
@@ -1093,7 +1094,12 @@ def carlo_stats(dataset):
     for i in range(0,len(resid)):
         test2[i] = float(resid.iloc[i])**2
     RMSE = (np.sum(test2)/len(resid))**0.5
-    return [(r2score, MAE, RMSE, A, m1, s1, m2, s2)]
+    # Generate Willmont index
+    if (np.sum(abs(Ayy - y))) > 2*np.sum(abs(y - np.mean(y))):
+        Wilm = ((2*np.sum(abs(y - np.mean(y))))/(np.sum(abs(Ayy - y)))) - 1
+    else:
+        Wilm = 1 - ((np.sum(abs(Ayy - y)))/(2*np.sum(abs(y - np.mean(y)))))
+    return [(r2score, MAE, RMSE, Wilm, A, m1, s1, m2, s2)]
 # %%
 # Creating a 5C division
 TrialBox = PSIIContr.sort_values(by='HeatMid')
@@ -1175,9 +1181,9 @@ for j in range(0, 500):
         carlobox = carlobox.append(newboxdf, ignore_index=True)
     #plt.plot(carlobox['HeatMid'], carlobox['phiPSIImax'], 'o')
     montefitvalues = montefitvalues.append(carlo_stats(carlobox))
-
+#%%
 x = np.linspace(0,500, 500)
-for i in range(0,8):
+for i in range(0,9):
     plt.hist(montefitvalues[i])
     plt.title(str(i))
     plt.show()
