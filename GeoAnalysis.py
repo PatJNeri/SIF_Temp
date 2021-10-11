@@ -162,3 +162,10 @@ f = PSIIGEO.filter(isss, axis=0)
 # https://towardsdatascience.com/how-to-export-pandas-dataframe-to-csv-2038e43d9c03
 f.to_csv('c:/Users/pjneri/Desktop/f.csv', na_rep='Unknown')
 # %%
+# Used the HPC_climatology.py basis to get out values from data set provided by Prof Song
+# These are the files:
+Precip = pd.read_csv('Hist_Precip.csv')
+Qbot = pd.read_csv('Hist_Qbot.csv')
+Solar = pd.read_csv('Hist_Solar.csv')
+TempB = pd.read_csv('Hist_TempB.csv')
+# %%
