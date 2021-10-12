@@ -169,6 +169,41 @@ Precip = pd.read_csv('Hist_Precip.csv')
 Qbot = pd.read_csv('Hist_Qbot.csv')
 Solar = pd.read_csv('Hist_Solar.csv')
 TempB = pd.read_csv('Hist_TempB.csv')
+
+# Convert to DataFrame
+P = pd.DataFrame(data=Precip)
+Q = pd.DataFrame(data=Qbot)
+S = pd.DataFrame(data=Solar)
+T = pd.DataFrame(data=TempB)
 # %%
 # Need to form a way to convert form the string date column to a more
 # usabe datetime method for ease of call and averaging.
+P['time'] = pd.to_datetime(P['time'])
+Q['time'] = pd.to_datetime(Q['time'])
+S['time'] = pd.to_datetime(S['time'])
+T['time'] = pd.to_datetime(T['time'])
+# %%
+# Making year accumulation set for precipitation
+# https://stackoverflow.com/questions/29370057/select-dataframe-rows-between-two-dates
+# https://stackoverflow.com/questions/39158699/how-to-select-column-and-rows-in-pandas-without-column-or-row-names
+cum_ann_Precip = np.zeros((32, 35))
+       
+for l in range(1985, 2017):
+    strt = str(l) + '0101'
+    endd = str(l+1) + '0101'
+    mask = (P['time'] > pd.to_datetime(strt, format='%Y%m%d')) & (P['time'] < pd.to_datetime(endd, format='%Y%m%d'))
+    year_ = P.loc[mask]
+    print(year_.shape)
+    for j in range(0,35):
+        cum_ann_Precip[l-1985, j] = sum(year_.iloc[:, j+2])
+# %%
+for l in range(1985, 2017):
+    print(l)
+    index_ = []
+    print(index_)
+    for i in range(0, 46720):
+        if P['time'][i].year == l:
+            index_.append(i)
+    print(len(index_))
+    for j in range(0,35):
+        cum_ann_Precip[l-1985,j] = sum(P.iloc[index_, j+2])
