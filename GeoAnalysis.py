@@ -8,6 +8,7 @@ from matplotlib import transforms
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.stats as stt
 import cartopy.crs as ccrs
 import re
 # %%
@@ -187,23 +188,101 @@ T['time'] = pd.to_datetime(T['time'])
 # https://stackoverflow.com/questions/29370057/select-dataframe-rows-between-two-dates
 # https://stackoverflow.com/questions/39158699/how-to-select-column-and-rows-in-pandas-without-column-or-row-names
 cum_ann_Precip = np.zeros((32, 35))
-       
 for l in range(1985, 2017):
     strt = str(l) + '0101'
     endd = str(l+1) + '0101'
     mask = (P['time'] > pd.to_datetime(strt, format='%Y%m%d')) & (P['time'] < pd.to_datetime(endd, format='%Y%m%d'))
     year_ = P.loc[mask]
-    print(year_.shape)
     for j in range(0,35):
-        cum_ann_Precip[l-1985, j] = sum(year_.iloc[:, j+2])
-# %%
+        cum_ann_Precip[l-1985, j] = sum(year_.iloc[:, j+2]*21600)
+
+# This could be refined, currently just lists month averages in chrono order
+# to call specific months...
+monthly_Precip = np.zeros((384, 35))
 for l in range(1985, 2017):
-    print(l)
-    index_ = []
-    print(index_)
-    for i in range(0, 46720):
-        if P['time'][i].year == l:
-            index_.append(i)
-    print(len(index_))
+    for m in range(1,13):
+        if m < 9:
+            strt = str(l) + '0' + str(m) + '01'
+            endd = str(l) + '0' + str(m+1) + '01'
+        elif m == 9:
+            strt = str(l) + '0901'
+            endd = str(l) + '1001'
+        elif m < 12:
+            strt = str(l) + str(m) + '01'
+            endd = str(l) + str(m+1) + '01'
+        else:
+            strt = str(l) + '1201'
+            endd = str(l+1) + '0101'
+        mask = (P['time'] > pd.to_datetime(strt, format='%Y%m%d')) & (P['time'] < pd.to_datetime(endd, format='%Y%m%d'))
+        month_ = P.loc[mask]
+        for j in range(0,35):
+            monthly_Precip[(l-1985)*12 + m - 1, j] = sum(month_.iloc[:, j+2])
+
+# %%
+# Plot method to show the variation over the years
+r = np.arange(0, 32, (1/12))
+r1 = np.arange(0,1, (1/12))
+theta = 2 * np.pi * r
+theta1 = 2 * np.pi * r1
+fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+ax.plot(theta, monthly_Precip[:, 7])
+#ax.plot(theta1, )
+ax.grid(True)
+
+ax.set_title("A line plot on a polar axis", va='bottom')
+plt.show()
+
+# %%
+cum_ann_Qbot = np.zeros((32, 35))
+for l in range(1985, 2017):
+    strt = str(l) + '0101'
+    endd = str(l+1) + '0101'
+    mask = (Q['time'] > pd.to_datetime(strt, format='%Y%m%d')) & (Q['time'] < pd.to_datetime(endd, format='%Y%m%d'))
+    year_ = Q.loc[mask]
     for j in range(0,35):
-        cum_ann_Precip[l-1985,j] = sum(P.iloc[index_, j+2])
+        cum_ann_Qbot[l-1985, j] = sum(year_.iloc[:, j+2])
+
+cum_ann_Solar = np.zeros((32, 35))
+for l in range(1985, 2017):
+    strt = str(l) + '0101'
+    endd = str(l+1) + '0101'
+    mask = (S['time'] > pd.to_datetime(strt, format='%Y%m%d')) & (S['time'] < pd.to_datetime(endd, format='%Y%m%d'))
+    year_ = S.loc[mask]
+    for j in range(0,35):
+        cum_ann_Solar[l-1985, j] = sum(year_.iloc[:, j+2])
+
+cum_ann_Tbot = np.zeros((32, 35))
+for l in range(1985, 2017):
+    strt = str(l) + '0101'
+    endd = str(l+1) + '0101'
+    mask = (T['time'] > pd.to_datetime(strt, format='%Y%m%d')) & (T['time'] < pd.to_datetime(endd, format='%Y%m%d'))
+    year_ = T.loc[mask]
+    for j in range(0,35):
+        cum_ann_Tbot[l-1985, j] = sum(year_.iloc[:, j+2])
+# %%
+# For precip, determine the mean and variance for each location 
+# to serve as a numerical proxy of climatological history
+
+# Display of the values of each locations annual accum. precip.
+for i in range(0,35):
+    plt.plot(range(0,32), cum_ann_Solar[:, i])
+
+# Make a list of the means and std for each location
+precip_clim = np.zeros((35,2))
+for i in range(0,35):
+    precip_clim[i, 1] = np.std(cum_ann_Precip[:, i])
+    precip_clim[i, 0] = np.mean(cum_ann_Precip[:, i])
+# %%
+for i in range(0,35):
+    plt.plot(range(0,32), cum_ann_Tbot[:, i])
+
+# Make a list of the means and std for each location
+Tbot_clim = np.zeros((35,2))
+for i in range(0,35):
+    Tbot_clim[i, 1] = np.std(cum_ann_Tbot[:, i])
+    Tbot_clim[i, 0] = np.mean(cum_ann_Tbot[:, i])
+# %%
+        if i < 10 :
+            df = xr.open_dataset(stri1 + stri2 + stri3 + str(k) + '-0' + str(i) + '.nc')
+        else:
+            df = xr.open_dataset(stri1 + stri2 + stri3 + str(k) + '-' + str(i) + '.nc')

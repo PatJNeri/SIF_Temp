@@ -340,6 +340,8 @@ def get_setdata_plot(dataset):
 #       So that you dont have to enter a full dataframe name every time?
 # 
 # %%
+
+# %%
 TrialBox = PSIIContr.sort_values(by='HeatMid')
 Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -12)] #-7
 Box1 = TrialBox[(TrialBox['HeatMid'] > -7) & (TrialBox['HeatMid'] < -2)] #3
@@ -443,8 +445,8 @@ PFT9 = PSIIContr[PSIIContr['PFT #'] == 9] #broadleaf evergreen shrub
 PFT9.name = 'broadleaf evergreen shrub'
 PFT10 = PSIIContr[PSIIContr['PFT #'] == 10] # broadleaf deciduous temp shrub 48
 PFT10.name = 'broadleaf deciduous temp shrub'
-PFT11 = PSIIContr[PSIIContr['PFT #'] == 11]
-PFT11.name = 'broadleaf deciduous boreal shrub' # broadleaf deciduous boreal shrub
+PFT11 = PSIIContr[PSIIContr['PFT #'] == 11] # broadleaf deciduous boreal shrub
+PFT11.name = 'broadleaf deciduous boreal shrub' 
 PFT12 = PSIIContr[PSIIContr['PFT #'] == 12] # c3 arctic grass
 PFT12.name = 'c3 arctic grass'
 PFT13 = PSIIContr[PSIIContr['PFT #'] == 13] #c3 non-artic grass 3
