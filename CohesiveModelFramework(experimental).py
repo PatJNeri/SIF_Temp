@@ -25,7 +25,7 @@ def minmax(val_list):
 # %%
 # Generation of example data for the purpose of explanation
 #print(os.getcwd())
-PSIImaster = pd.read_excel('c:/Users/PJN89/temp_git/PSIImax-Master2-24.xlsx',
+PSIImaster = pd.read_excel('PSIImax-Master2-24.xlsx',
                            engine='openpyxl')
 PSIImaster['HeatMid'] = (PSIImaster['HeatUp'] + PSIImaster['HeatDown'])/2
 PSIImaster.name = 'PSII Master'

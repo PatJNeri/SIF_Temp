@@ -160,7 +160,8 @@ f = PSIIGEO.filter(isss, axis=0)
 #f1 = PSIIGEO[PSIIGEO.index.isin(isss)]
 # Generate a csv out of this new dataframe
 # https://towardsdatascience.com/how-to-export-pandas-dataframe-to-csv-2038e43d9c03
-f.to_csv('c:/Users/pjneri/Desktop/f.csv', na_rep='Unknown')
+# Optional method to output for desktop confirmation
+#f.to_csv('c:/Users/pjneri/Desktop/f.csv', na_rep='Unknown')
 # %%
 # Used the HPC_climatology.py basis to get out values from data set provided by Prof Song
 # These are the files:
@@ -169,3 +170,5 @@ Qbot = pd.read_csv('Hist_Qbot.csv')
 Solar = pd.read_csv('Hist_Solar.csv')
 TempB = pd.read_csv('Hist_TempB.csv')
 # %%
+# Need to form a way to convert form the string date column to a more
+# usabe datetime method for ease of call and averaging.
