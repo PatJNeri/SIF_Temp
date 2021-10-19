@@ -217,15 +217,22 @@ for l in range(1985, 2017):
         month_ = P.loc[mask]
         for j in range(0,35):
             monthly_Precip[(l-1985)*12 + m - 1, j] = sum(month_.iloc[:, j+2])
-
+# %%
+# https://pandas.pydata.org/docs/getting_started/intro_tutorials/09_timeseries.html?highlight=datetime
+# https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html
+# trying a different method
+day_prec_try = P.groupby(P['time'].dt.date).mean()
+month_temp_try = T.groupby(T['time'].dt.month).mean()
 # %%
 # Plot method to show the variation over the years
-r = np.arange(0, 32, (1/12))
+loc_num = 7
+r = np.arange(0, 1, (1/366))
 r1 = np.arange(0,1, (1/12))
 theta = 2 * np.pi * r
 theta1 = 2 * np.pi * r1
 fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-ax.plot(theta, monthly_Precip[:, 7])
+ax.plot(theta, day_prec_try.iloc[:, loc_num])
+#ax.plot(theta1, month_temp_try.iloc[:,loc_num])
 #ax.plot(theta1, )
 ax.grid(True)
 
@@ -233,39 +240,14 @@ ax.set_title("A line plot on a polar axis", va='bottom')
 plt.show()
 
 # %%
-cum_ann_Qbot = np.zeros((32, 35))
-for l in range(1985, 2017):
-    strt = str(l) + '0101'
-    endd = str(l+1) + '0101'
-    mask = (Q['time'] > pd.to_datetime(strt, format='%Y%m%d')) & (Q['time'] < pd.to_datetime(endd, format='%Y%m%d'))
-    year_ = Q.loc[mask]
-    for j in range(0,35):
-        cum_ann_Qbot[l-1985, j] = sum(year_.iloc[:, j+2])
-
-cum_ann_Solar = np.zeros((32, 35))
-for l in range(1985, 2017):
-    strt = str(l) + '0101'
-    endd = str(l+1) + '0101'
-    mask = (S['time'] > pd.to_datetime(strt, format='%Y%m%d')) & (S['time'] < pd.to_datetime(endd, format='%Y%m%d'))
-    year_ = S.loc[mask]
-    for j in range(0,35):
-        cum_ann_Solar[l-1985, j] = sum(year_.iloc[:, j+2])
-
-cum_ann_Tbot = np.zeros((32, 35))
-for l in range(1985, 2017):
-    strt = str(l) + '0101'
-    endd = str(l+1) + '0101'
-    mask = (T['time'] > pd.to_datetime(strt, format='%Y%m%d')) & (T['time'] < pd.to_datetime(endd, format='%Y%m%d'))
-    year_ = T.loc[mask]
-    for j in range(0,35):
-        cum_ann_Tbot[l-1985, j] = sum(year_.iloc[:, j+2])
+plt.hist(T['location 2'][:])
 # %%
 # For precip, determine the mean and variance for each location 
 # to serve as a numerical proxy of climatological history
 
 # Display of the values of each locations annual accum. precip.
 for i in range(0,35):
-    plt.plot(range(0,32), cum_ann_Solar[:, i])
+    plt.plot(range(0,32), cum_ann_Precip[:, i])
 
 # Make a list of the means and std for each location
 precip_clim = np.zeros((35,2))
@@ -282,7 +264,3 @@ for i in range(0,35):
     Tbot_clim[i, 1] = np.std(cum_ann_Tbot[:, i])
     Tbot_clim[i, 0] = np.mean(cum_ann_Tbot[:, i])
 # %%
-        if i < 10 :
-            df = xr.open_dataset(stri1 + stri2 + stri3 + str(k) + '-0' + str(i) + '.nc')
-        else:
-            df = xr.open_dataset(stri1 + stri2 + stri3 + str(k) + '-' + str(i) + '.nc')
