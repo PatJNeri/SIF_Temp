@@ -218,11 +218,34 @@ for l in range(1985, 2017):
         for j in range(0,35):
             monthly_Precip[(l-1985)*12 + m - 1, j] = sum(month_.iloc[:, j+2])
 # %%
+# trying a different method
 # https://pandas.pydata.org/docs/getting_started/intro_tutorials/09_timeseries.html?highlight=datetime
 # https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html
-# trying a different method
 day_prec_try = P.groupby(P['time'].dt.date).mean()
 month_temp_try = T.groupby(T['time'].dt.month).mean()
+# %%
+# Produce a method that orders the monthly values of whichever
+# location, then do a [:3] for top and [(len(timeseries)-3):]
+ranked_3mon_sum = np.zeros(12)
+print('1') 
+ranked_3mon_sum[0] = (np.mean((month_temp_try['location 0'][1], month_temp_try['location 0'][2], month_temp_try['location 0'][12])))
+for i in range(2,12):
+    print(i)
+    ranked_3mon_sum[i-1] = (np.mean(month_temp_try['location 0'][i-1:i+1]))
+print('12')
+ranked_3mon_sum[11] = (np.mean((month_temp_try['location 0'][11], month_temp_try['location 0'][12], month_temp_try['location 0'][1])))
+
+
+
+
+
+
+# %%
+# methods of saving them... not sure yet
+
+# once saved make a mask to produce high and low histograms/datasets
+high_mon = #blah [:3]
+low_mon = #blah []
 # %%
 # Plot method to show the variation over the years
 loc_num = 7
