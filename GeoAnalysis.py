@@ -8,6 +8,7 @@ from matplotlib import transforms
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from pandas.core.algorithms import rank
 import scipy.stats as stt
 import cartopy.crs as ccrs
 import re
@@ -235,11 +236,15 @@ for i in range(2,12):
 print('12')
 ranked_3mon_sum[11] = (np.mean((month_temp_try['location 0'][11], month_temp_try['location 0'][12], month_temp_try['location 0'][1])))
 
+ranked_df = pd.DataFrame(data=ranked_3mon_sum)
+ranked_df['month'] = ranked_df.index + 1
+ranked_df['rank'] = ranked_df.iloc[:,0].rank()
 
+peak_month = ranked_df[ranked_df['rank'] == 12]['month']
+weak_month = ranked_df[ranked_df['rank'] == 1]['month']
 
-
-
-
+peak_hist_set = 
+weak_hist_set = 
 # %%
 # methods of saving them... not sure yet
 
