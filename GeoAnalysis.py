@@ -235,22 +235,76 @@ for i in range(2,12):
     ranked_3mon_sum[i-1] = (np.mean(month_temp_try['location 0'][i-1:i+1]))
 print('12')
 ranked_3mon_sum[11] = (np.mean((month_temp_try['location 0'][11], month_temp_try['location 0'][12], month_temp_try['location 0'][1])))
-
+# Finding max 3-month running average to define 'season'
 ranked_df = pd.DataFrame(data=ranked_3mon_sum)
 ranked_df['month'] = ranked_df.index + 1
 ranked_df['rank'] = ranked_df.iloc[:,0].rank()
 
 peak_month = ranked_df[ranked_df['rank'] == 12]['month']
 weak_month = ranked_df[ranked_df['rank'] == 1]['month']
+# Creating histogram groups
+if int(peak_month) == 1:
+    peak_hist_set = T[T['time'].dt.month.isin([12,1,2])]['location 0']
+elif int(peak_month) == 12:
+    peak_hist_set = T[T['time'].dt.month.isin([11,12,1])]['location 0']
+else:
+    peak_hist_set = T[T['time'].dt.month.isin([int(peak_month-1), int(peak_month), int(peak_month+1)])]['location 0']
+if int(weak_month) == 1:
+    weak_hist_set = T[T['time'].dt.month.isin([12,1,2])]['location 0']
+elif int(weak_month) == 12:
+    weak_hist_set = T[T['time'].dt.month.isin([11,12,1])]['location 0']
+else:
+    weak_hist_set = T[T['time'].dt.month.isin([int(weak_month-1), int(weak_month), int(weak_month+1)])]['location 0']
+# Getting the 'historic highs and lows' and means
+his_dis_weak = stt.rv_histogram(np.histogram(weak_hist_set, bins=20))
+his_dis_peak = stt.rv_histogram(np.histogram(peak_hist_set, bins=20))
 
-peak_hist_set = 
-weak_hist_set = 
+weak_mean = his_dis_weak.ppf(0.5)
+weak_lower = his_dis_weak.ppf(0.25)
+peak_mean = his_dis_peak.ppf(0.5)
+peak_upper = his_dis_peak.ppf(0.75)
+clim_mean = np.mean(T['location 0'])
 # %%
-# methods of saving them... not sure yet
-
-# once saved make a mask to produce high and low histograms/datasets
-high_mon = #blah [:3]
-low_mon = #blah []
+# methods of saving them (building a loop)
+clim_locs_historic = pd.DataFrame()
+for j in range(0,35):
+    location = 'location ' + str(j)
+    print(location)
+    ranked_3mon_sum = np.zeros(12)
+    ranked_3mon_sum[0] = (np.mean((month_temp_try[location][1], month_temp_try[location][2], month_temp_try[location][12])))
+    for i in range(2,12):
+        ranked_3mon_sum[i-1] = (np.mean(month_temp_try[location][i-1:i+1]))
+    ranked_3mon_sum[11] = (np.mean((month_temp_try[location][11], month_temp_try[location][12], month_temp_try[location][1])))
+    # Finding max 3-month running average to define 'season'
+    ranked_df = pd.DataFrame(data=ranked_3mon_sum)
+    ranked_df['month'] = ranked_df.index + 1
+    ranked_df['rank'] = ranked_df.iloc[:,0].rank()
+    ranked_df
+    peak_month = ranked_df[ranked_df['rank'] == 12]['month']
+    weak_month = ranked_df[ranked_df['rank'] == 1]['month']
+    # Creating histogram groups
+    if int(peak_month) == 1:
+        peak_hist_set = T[T['time'].dt.month.isin([12,1,2])][location]
+    elif int(peak_month) == 12:
+        peak_hist_set = T[T['time'].dt.month.isin([11,12,1])][location]
+    else:
+        peak_hist_set = T[T['time'].dt.month.isin([int(peak_month-1), int(peak_month), int(peak_month+1)])][location]
+    if int(weak_month) == 1:
+        weak_hist_set = T[T['time'].dt.month.isin([12,1,2])][location]
+    elif int(weak_month) == 12:
+        weak_hist_set = T[T['time'].dt.month.isin([11,12,1])][location]
+    else:
+        weak_hist_set = T[T['time'].dt.month.isin([int(weak_month-1), int(weak_month), int(weak_month+1)])][location]
+    # Getting the 'historic highs and lows' and means
+    his_dis_weak = stt.rv_histogram(np.histogram(weak_hist_set, bins=20))
+    his_dis_peak = stt.rv_histogram(np.histogram(peak_hist_set, bins=20))
+    # Components to add to dataframe
+    weak_mean = his_dis_weak.ppf(0.5)
+    weak_lower = his_dis_weak.ppf(0.25)
+    peak_mean = his_dis_peak.ppf(0.5)
+    peak_upper = his_dis_peak.ppf(0.75)
+    clim_mean = np.mean(T[location])
+    clim_locs_historic[j] = [int(weak_month), weak_mean, weak_lower, int(peak_month), peak_mean, peak_upper, clim_mean]
 # %%
 # Plot method to show the variation over the years
 loc_num = 7
@@ -292,3 +346,4 @@ for i in range(0,35):
     Tbot_clim[i, 1] = np.std(cum_ann_Tbot[:, i])
     Tbot_clim[i, 0] = np.mean(cum_ann_Tbot[:, i])
 # %%
+ 
