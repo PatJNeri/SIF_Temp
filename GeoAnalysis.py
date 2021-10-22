@@ -307,13 +307,13 @@ for j in range(0,35):
     clim_locs_historic[j] = [int(weak_month), weak_mean, weak_lower, int(peak_month), peak_mean, peak_upper, clim_mean]
 # %%
 # Plot method to show the variation over the years
-loc_num = 7
-r = np.arange(0, 1, (1/366))
-r1 = np.arange(0,1, (1/12))
+loc_num = 0
+r = np.arange(0, 32, (1/365))
+r1 = np.arange(0,32, (1/12))
 theta = 2 * np.pi * r
 theta1 = 2 * np.pi * r1
 fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-ax.plot(theta, day_prec_try.iloc[:, loc_num])
+ax.plot(theta1, monthly_Precip[:, loc_num])
 #ax.plot(theta1, month_temp_try.iloc[:,loc_num])
 #ax.plot(theta1, )
 ax.grid(True)

@@ -14,7 +14,64 @@ import math
 from matplotlib import transforms
 import scipy.stats as stt
 import cartopy.crs as ccrs
+from lmfit.models import RectangleModel
 import re
+# %%
+def get_Mod_paramsValues(output):
+        """Getting out values of model params with numerical values
+        Produces a dataframe of param names and values """
+        Var_list = output.var_names
+        frame = []
+        for n in range(len(Var_list)):
+                vari = output.params[Var_list[n]]
+                vari_split = str(vari).split()
+                vari_value = vari_split[2].split('=')
+                frame.append((Var_list[n], float(vari_value[1][:-1])))
+        Paramet = pd.DataFrame(frame, columns=['name', 'val'])
+        return Paramet
+
+def get_set_resid(dataset):
+        """ Pick a chosen dataset that has a HeatMid column and phiPSIImax column"""
+        Ordered = dataset.sort_values(by='HeatMid')
+        x = Ordered['HeatMid']
+        x0 = x.iloc[:]
+        y = Ordered['phiPSIImax']
+        y0 = y.iloc[:]
+        # Quad Model run
+        mod = RectangleModel(form='erf')
+        mod.set_param_hint('amplitude', value=0.8, min=0.75, max=0.9)
+        mod.set_param_hint('center1', value=-3, min=-15, max=10)
+        mod.set_param_hint('center2', value=45, min=15, max=60)
+        mod.set_param_hint('sigma1', value=7, min=1, max=12)
+        mod.set_param_hint('sigma2', value=7, min=1, max=12)
+        pars = mod.guess(y0, x=x0)
+        pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
+        pars['center1'].set(value=-6, min=-23, max=7)
+        pars['center2'].set(value=46, min=35, max=57)
+        pars['sigma1'].set(value=7, min=1, max=25)
+        pars['sigma2'].set(value=5, min=1, max=12)
+        out = mod.fit(y, pars, x=x)
+        print(out.fit_report())
+        ps = get_Mod_paramsValues(out)
+        A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
+        # produces dataset for r-squared
+        Aa1 = (x - m1)/s1
+        Aaa1 = []
+        for i in range(len(Aa1)):
+                Aaa1.append(math.erf(Aa1.iloc[i]))
+        Aa2 = -(x - m2)/s2
+        Aaa2 = []
+        for i in range(len(Aa2)):
+                Aaa2.append(math.erf(Aa2.iloc[i]))
+        Ayy = []
+        for i in range(len(Aaa1)):
+                Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
+        print('R-squared : ', r2_score(y, Ayy))
+
+        # Here the residual of the dataset is calculated
+        resid = (y - Ayy)
+
+        return resid
 # %%
 print(os.getcwd())
 PSIImaster = pd.read_excel('PSIImax-Master2-24.xlsx', engine='openpyxl')
@@ -207,24 +264,168 @@ for j in range(0,35):
     peak_upper = his_dis_peak.ppf(0.75)
     clim_mean = np.mean(T[location])
     clim_locs_historic[j] = [int(weak_month), weak_mean, weak_lower, int(peak_month), peak_mean, peak_upper, clim_mean]
-
+# %%
 #Friedman
-low_mon_num = np.histogram_bin_edges(clim_locs_historic[0,:], bins='df')
-low_mon_mean = np.histogram_bin_edges(clim_locs_historic[1,:], bins='df')
-low_mon_low = np.histogram_bin_edges(clim_locs_historic[2,:], bins='df')
-high_mon_num = np.histogram_bin_edges(clim_locs_historic[3,:], bins='df')
-high_mon_mean = np.histogram_bin_edges(clim_locs_historic[4,:], bins='df')
-high_mon_low = np.histogram_bin_edges(clim_locs_historic[5,:], bins='df')
-clim_allmean = np.histogram_bin_edges(clim_locs_historic[6,:], bins='df')
+low_mon_num = np.histogram_bin_edges(clim_locs_historic.iloc[0,:], bins='fd')
+low_mon_mean = np.histogram_bin_edges(clim_locs_historic.iloc[1,:], bins='fd')
+low_mon_low = np.histogram_bin_edges(clim_locs_historic.iloc[2,:], bins='fd')
+high_mon_num = np.histogram_bin_edges(clim_locs_historic.iloc[3,:], bins='fd')
+high_mon_mean = np.histogram_bin_edges(clim_locs_historic.iloc[4,:], bins='fd')
+high_mon_upp = np.histogram_bin_edges(clim_locs_historic.iloc[5,:], bins='fd')
+clim_allmean = np.histogram_bin_edges(clim_locs_historic.iloc[6,:], bins='fd')
 
+len_of_bins = [len(low_mon_num) -1, len(low_mon_mean) -1, len(low_mon_low) -1,
+               len(high_mon_num) -1, len(high_mon_mean) -1, len(high_mon_upp)-1, len(clim_allmean) -1]
 
-
-
-
-
-
+rank_clim_locs = np.zeros((7,35))
+for i in range(0,35):
+    for j in range(0, len(low_mon_num)-1):
+#        if clim_locs_historic.iloc[0,j] in range(low_mon_num[j], low_mon_num[j+1]):
+#            rank_clim_locs[0,j] = j
+        if low_mon_num[j] <= clim_locs_historic.iloc[0,i] <= low_mon_num[j+1]:
+            print(i,j)
+            rank_clim_locs[0,i] = j
+    for j in range(0,len(low_mon_mean)-1):
+        if low_mon_mean[j] <= clim_locs_historic.iloc[1,i] <= low_mon_mean[j+1]:
+            print(i,j)
+            rank_clim_locs[1,i] = j
+    for j in range(0,len(low_mon_low)-1):
+        if low_mon_low[j] <= clim_locs_historic.iloc[2,i] <= low_mon_low[j+1]:
+            print(i,j)
+            rank_clim_locs[2,i] = j
+    for j in range(0,len(high_mon_num)-1):
+        if high_mon_num[j] <= clim_locs_historic.iloc[3,i] <= high_mon_num[j+1]:
+            print(i,j)
+            rank_clim_locs[3,i] = j
+    for j in range(0,len(high_mon_mean)-1):
+        if high_mon_mean[j] <= clim_locs_historic.iloc[4,i] <= high_mon_mean[j+1]:
+            print(i,j)
+            rank_clim_locs[4,i] = j               
+    for j in range(0,len(high_mon_upp)-1):
+        if high_mon_upp[j] <= clim_locs_historic.iloc[5,i] <= high_mon_upp[j+1]:
+            print(i,j)
+            rank_clim_locs[5,i] = j     
+    for j in range(0,len(clim_allmean)-1):
+        if clim_allmean[j] <= clim_locs_historic.iloc[6,i] <= clim_allmean[j+1]:
+            print(i,j)
+            rank_clim_locs[6,i] = j     
+# %%
+# Create the residual column based on all PSIIGEO data
+# Also builds in the columns in an oraginzed by HeatMid for the ANOVA cates
+Ordered_set = PSIIGEO.sort_values(by='HeatMid')
+Ordered_set['residual'] = get_set_resid(PSIIGEO)
+Ordered_set['loc num'] = Ordered_set['residual']
+Ordered_set['LTMon'] = Ordered_set['residual']
+Ordered_set['LTMean'] = Ordered_set['residual']
+Ordered_set['LTExt'] = Ordered_set['residual']
+Ordered_set['HTMon'] = Ordered_set['residual']
+Ordered_set['HTMean'] = Ordered_set['residual']
+Ordered_set['HTExt'] = Ordered_set['residual']
+Ordered_set['CLMean'] = Ordered_set['residual']
+for i in range(0,len(Ordered_set)):
+    for j in range(0,35):
+        if Ordered_set['latlon'].iloc[i] == locations[j]:
+            Ordered_set['loc num'].iloc[i] = j
+            Ordered_set['LTMon'].iloc[i] = rank_clim_locs[0,j]
+            Ordered_set['LTMean'].iloc[i] = rank_clim_locs[1,j]
+            Ordered_set['LTExt'].iloc[i] = rank_clim_locs[2,j]
+            Ordered_set['HTMon'].iloc[i] = rank_clim_locs[3,j]
+            Ordered_set['HTMean'].iloc[i] = rank_clim_locs[4,j]
+            Ordered_set['HTExt'].iloc[i] = rank_clim_locs[5,j]
+            Ordered_set['CLMean'].iloc[i] = rank_clim_locs[6,j]
 
 # %%
+# Generate a method for making the ranked column values for any ANOVA combo
+def ANOVA_stuff(dataset, i, j, k):
+    """Dataset in this case should always be PSIIGEO or
+    Ordered_set. i, j, k are the classifying numbers
+    of the chosen 'axes' acourding to the order they appear
+    in len_of_bins. Assumes all the column data for the
+    selected i,j,k are fully filled in and residual column 
+    is already generated. To make the column index call align,
+    make sure to follow the above script to generate the
+    right number of columns"""
+    PSII3ANOVA = dataset
+    OneXtwo = np.zeros([len_of_bins[i], len_of_bins[j]])
+    for n in range(0,len_of_bins[i]):
+        for m in range(0,len_of_bins[j]):
+            OneXtwo[n,m] = np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:, 43+i] == n) & (PSII3ANOVA.iloc[:,43+j] == m)])
+    OneXthree = np.zeros([len_of_bins[i], len_of_bins[k]])
+    for n in range(0,len_of_bins[i]):
+        for m in range(0,len_of_bins[k]):
+            OneXthree[n,m] = np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:, 43+i] == n) & (PSII3ANOVA.iloc[:,43+k] == m)])
+    TwoXthree = np.zeros([len_of_bins[j], len_of_bins[k]])
+    for n in range(0,len_of_bins[j]):
+        for m in range(0,len_of_bins[k]):
+            TwoXthree[n,m] = np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:, 43+j] == n) & (PSII3ANOVA.iloc[:,43+k] == m)])
+    OneSolo = np.zeros(len_of_bins[i])
+    for n in range(0, len_of_bins[i]):
+        OneSolo[n] = np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:,43+i] == n)])
+    TwoSolo = np.zeros(len_of_bins[j])
+    for n in range(0, len_of_bins[j]):
+        TwoSolo[n] = np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:,43+j] == n)])
+    ThreeSolo = np.zeros(len_of_bins[k])
+    for n in range(0,len_of_bins[k]):
+        ThreeSolo[n] = np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:,43+k] == n)])
+    mu = np.mean(PSII3ANOVA['residual'])
+
+    PSII3ANOVA['ART T way'] = PSII3ANOVA['phiPSIImax']
+    PSII3ANOVA['ART t way'] = PSII3ANOVA['phiPSIImax']
+    PSII3ANOVA['ART S way'] = PSII3ANOVA['phiPSIImax']
+    PSII3ANOVA['ART Tt way'] = PSII3ANOVA['phiPSIImax']
+    PSII3ANOVA['ART TS way'] = PSII3ANOVA['phiPSIImax']
+    PSII3ANOVA['ART tS way'] = PSII3ANOVA['phiPSIImax']
+    PSII3ANOVA['ART TtS way'] = PSII3ANOVA['phiPSIImax']
+
+    for x in range(len(PSII3ANOVA['phiPSIImax'])):
+        #print(x)
+        n = int(PSII3ANOVA.iloc[x, 43+i])
+        #print(i)
+        m = int(PSII3ANOVA.iloc[x, 43+j])
+        #print(j)
+        p = int(PSII3ANOVA.iloc[x, 43+k])
+        #print(k)
+        PSII3ANOVA['ART T way'].iloc[x] = (PSII3ANOVA['residual'].iloc[x] - np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:, 43+i] == n) & (PSII3ANOVA.iloc[:, 43+j] == m) & (PSII3ANOVA.iloc[:, 43+k] == p)]) + OneSolo[n] - mu)
+        PSII3ANOVA['ART t way'].iloc[x] = (PSII3ANOVA['residual'].iloc[x] - np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:,43+i] == n) & (PSII3ANOVA.iloc[:, 43+j] == m) & (PSII3ANOVA.iloc[:, 43+k] == p)]) + TwoSolo[m] - mu)
+        PSII3ANOVA['ART S way'].iloc[x] = (PSII3ANOVA['residual'].iloc[x] - np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:,43+i] == n) & (PSII3ANOVA.iloc[:, 43+j] == m) & (PSII3ANOVA.iloc[:, 43+k] == p)]) + ThreeSolo[p] - mu)
+        PSII3ANOVA['ART Tt way'].iloc[x] = (PSII3ANOVA['residual'].iloc[x] - np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:,43+i] == n) & (PSII3ANOVA.iloc[:, 43+j] == m) & (PSII3ANOVA.iloc[:, 43+k] == p)]) + OneXtwo[n,m] - OneSolo[n] - TwoSolo[m] + mu)
+        PSII3ANOVA['ART TS way'].iloc[x] = (PSII3ANOVA['residual'].iloc[x] - np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:,43+i] == n) & (PSII3ANOVA.iloc[:, 43+j] == m) & (PSII3ANOVA.iloc[:, 43+k] == p)]) + OneXthree[n,p] - OneSolo[n] - ThreeSolo[p] + mu)
+        PSII3ANOVA['ART tS way'].iloc[x] = (PSII3ANOVA['residual'].iloc[x] - np.mean(PSII3ANOVA['residual'][(PSII3ANOVA.iloc[:,43+i] == n) & (PSII3ANOVA.iloc[:, 43+j] == m) & (PSII3ANOVA.iloc[:, 43+k] == p)]) + TwoXthree[m,p] - TwoSolo[m] - ThreeSolo[p] + mu)
+        PSII3ANOVA['ART TtS way'].iloc[x] = (PSII3ANOVA['residual'].iloc[x] - OneXtwo[n,m] - OneXthree[n,p] - TwoXthree[m,p] + OneSolo[n] + TwoSolo[m] + ThreeSolo[p] - mu)
+
+    return PSII3ANOVA
+
+# %%
+# Not sure if that function will work, guess we will see!
+Attempt = ANOVA_stuff(Ordered_set, 1, 4, 6)
+
+ART3way1 = Attempt.sort_values(by='ART T way')
+ART3way1['number'] = ART3way1['ART T way'].rank()
+ART3way2 = Attempt.sort_values(by='ART t way')
+ART3way2['number'] = ART3way2['ART t way'].rank()
+ART3way3 = Attempt.sort_values(by='ART S way')
+ART3way3['number'] = ART3way3['ART S way'].rank()
+ART3way_12 = Attempt.sort_values(by='ART Tt way')
+ART3way_12['number'] = ART3way_12['ART Tt way'].rank()
+ART3way_13 = Attempt.sort_values(by='ART TS way') 
+ART3way_13['number'] = ART3way_13['ART TS way'].rank()
+ART3way_23 = Attempt.sort_values(by='ART tS way')
+ART3way_23['number'] = ART3way_23['ART tS way'].rank()
+ART3way_all = Attempt.sort_values(by='ART TtS way')
+ART3way_all['number'] = ART3way_all['ART TtS way'].rank()
+
+# %%
+# Now run thru the list of above dataframes adjusting Pogg
+fir = 1
+sec = 4
+thr = 6
+Pogg = ART3way1
+dCont = {'rank': Pogg['number'], 'One': Pogg.iloc[:, 43+fir], 'Two': Pogg.iloc[:, 43+sec], 'Three': Pogg.iloc[:, 43+thr]}
+DfCont = pd.DataFrame(data=dCont)
+model = ols('rank ~ C(One) + C(Two) + C(Three) + C(One):C(Two) + C(One):C(Three) + C(Two):C(Three) + C(One):C(Two):C(Three) -1', data=DfCont).fit()
+anova_table = sm.stats.anova_lm(model, typ=3)
+anova_table
+
 # %%
 # Below is the raw method to perform 3 way ANOVA
 PSII3ANOVA = PSIIGEO
