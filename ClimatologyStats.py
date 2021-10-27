@@ -72,6 +72,16 @@ def get_set_resid(dataset):
         resid = (y - Ayy)
 
         return resid
+
+def point_resid(x, y, a, c1, c2, s1, s2):
+    Aa1 = (x - c1)/s1
+    Aaa1 = math.erf(Aa1)
+    Aa2 = -(x - c2)/s2
+    Aaa2 = math.erf(Aa2)
+    Ayy = (a/2)* (Aaa1 + Aaa2)
+    # Here the residual of the dataset is calculated
+    resid = (y - Ayy)
+    return resid
 # %%
 print(os.getcwd())
 PSIImaster = pd.read_excel('PSIImax-Master2-24.xlsx', engine='openpyxl')
@@ -312,8 +322,11 @@ for i in range(0,35):
 # %%
 # Create the residual column based on all PSIIGEO data
 # Also builds in the columns in an oraginzed by HeatMid for the ANOVA cates
-Ordered_set = PSIIGEO.sort_values(by='HeatMid')
-Ordered_set['residual'] = get_set_resid(PSIIGEO)
+# (need to make alternate group, mischaracterization of original attempt)
+# (to recreate original set, sub back in the # items)
+PSIIClim = PSIIGEO[PSIIGEO['Climate'] == 1]
+Ordered_set = PSIIClim.sort_values(by='HeatMid') #PSIIGEO.sort_values(by='HeatMid')
+Ordered_set['residual'] = get_set_resid(PSIIClim) #get_set_resid(PSIIGEO)
 Ordered_set['loc num'] = Ordered_set['residual']
 Ordered_set['LTMon'] = Ordered_set['residual']
 Ordered_set['LTMean'] = Ordered_set['residual']
@@ -336,6 +349,11 @@ for i in range(0,len(Ordered_set)):
 
 # %%
 # Generate a method for making the ranked column values for any ANOVA combo
+
+
+# Need to check for the 43 term below if that is consistent with raw run of code.
+
+
 def ANOVA_stuff(dataset, i, j, k):
     """Dataset in this case should always be PSIIGEO or
     Ordered_set. i, j, k are the classifying numbers
@@ -419,98 +437,54 @@ ART3way_all['number'] = ART3way_all['ART TtS way'].rank()
 fir = 1
 sec = 4
 thr = 6
-Pogg = ART3way1
+Pogg = ART3way_all
 dCont = {'rank': Pogg['number'], 'One': Pogg.iloc[:, 43+fir], 'Two': Pogg.iloc[:, 43+sec], 'Three': Pogg.iloc[:, 43+thr]}
 DfCont = pd.DataFrame(data=dCont)
 model = ols('rank ~ C(One) + C(Two) + C(Three) + C(One):C(Two) + C(One):C(Three) + C(Two):C(Three) + C(One):C(Two):C(Three) -1', data=DfCont).fit()
 anova_table = sm.stats.anova_lm(model, typ=3)
 anova_table
 
-# %%
-# Below is the raw method to perform 3 way ANOVA
-PSII3ANOVA = PSIIGEO
-PSII3ANOVA.dropna(subset=['Adjusted PFT'])
-PSII3ANOVA.dropna(subset=['temptemp'], inplace=True)
-PSII3ANOVA.dropna(subset=['timetime'], inplace=True)
-# Let Temp be i, time be j, PFT be k
-Txtime = np.zeros([5, 4])
-for i in range(0,5):
-    for j in range(0,4):
-        Txtime[i,j] = np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['temptemp'] == i) & (PSII3ANOVA['timetime'] == j)])
 
-TxSpec = np.zeros([5,16])
-for i in range(0,5):
-    for k in range(1,17):
-        TxSpec[i,k-1] = np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['temptemp'] == i) & (PSII3ANOVA['Adjusted PFT'] == k)])
-
-timexSpec = np.zeros([4,16])
-for j in range(0,4):
-    for k in range(1,17):
-        timexSpec[j,k-1] = np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['timetime'] == j) & (PSII3ANOVA['Adjusted PFT'] == k)])
-
-Tsolo = np.zeros(5)
-for i in range(0, 5):
-    Tsolo[i] = np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['temptemp'] == i)])
-
-Timesolo = np.zeros(4)
-for j in range(0,4):
-    Timesolo[j] = np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['timetime'] == j)])
-
-Speciessolo = np.zeros(16)
-for i in range(1,17):
-    Speciessolo[k-1] = np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['Adjusted PFT'] == k)])
-
-mu = np.mean(PSII3ANOVA['phiPSIImax'])
-#PSII3ANOVA.dropna(axis=0, subset=['timetime'])
-
-PSII3ANOVA['ART T way'] = PSII3ANOVA['phiPSIImax']
-PSII3ANOVA['ART t way'] = PSII3ANOVA['phiPSIImax']
-PSII3ANOVA['ART S way'] = PSII3ANOVA['phiPSIImax']
-PSII3ANOVA['ART Tt way'] = PSII3ANOVA['phiPSIImax']
-PSII3ANOVA['ART TS way'] = PSII3ANOVA['phiPSIImax']
-PSII3ANOVA['ART tS way'] = PSII3ANOVA['phiPSIImax']
-PSII3ANOVA['ART TtS way'] = PSII3ANOVA['phiPSIImax']
-# The following line drops elements of PFT 13 based on the input of timetime, make sure to remake the 
-# dataframe if this is not a relevant commponent of ongoing test
-PSII3ANOVA.dropna(subset=['timetime'], inplace=True)
-
-for x in range(len(PSII3ANOVA['phiPSIImax'])):
-    #print(x)
-    i = int(PSII3ANOVA['temptemp'].iloc[x])
-    #print(i)
-    j = int(PSII3ANOVA['timetime'].iloc[x])
-    #print(j)
-    k = int(PSII3ANOVA['Adjusted PFT'].iloc[x])
-    #print(k)
-    PSII3ANOVA['ART T way'].iloc[x] = (PSII3ANOVA['phiPSIImax'].iloc[x] - np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['temptemp'] == i) & (PSII3ANOVA['timetime'] == j) & (PSII3ANOVA['Adjusted PFT'] == k)]) + Tsolo[i] - mu)
-    PSII3ANOVA['ART t way'].iloc[x] = (PSII3ANOVA['phiPSIImax'].iloc[x] - np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['temptemp'] == i) & (PSII3ANOVA['timetime'] == j) & (PSII3ANOVA['Adjusted PFT'] == k)]) + Timesolo[j] - mu)
-    PSII3ANOVA['ART S way'].iloc[x] = (PSII3ANOVA['phiPSIImax'].iloc[x] - np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['temptemp'] == i) & (PSII3ANOVA['timetime'] == j) & (PSII3ANOVA['Adjusted PFT'] == k)]) + Speciessolo[k-1] - mu)
-    PSII3ANOVA['ART Tt way'].iloc[x] = (PSII3ANOVA['phiPSIImax'].iloc[x] - np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['temptemp'] == i) & (PSII3ANOVA['timetime'] == j) & (PSII3ANOVA['Adjusted PFT'] == k)]) + Txtime[i,j] - Tsolo[i] - Timesolo[j] + mu)
-    PSII3ANOVA['ART TS way'].iloc[x] = (PSII3ANOVA['phiPSIImax'].iloc[x] - np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['temptemp'] == i) & (PSII3ANOVA['timetime'] == j) & (PSII3ANOVA['Adjusted PFT'] == k)]) + TxSpec[i,k-1] - Tsolo[i] - Speciessolo[k-1] + mu)
-    PSII3ANOVA['ART tS way'].iloc[x] = (PSII3ANOVA['phiPSIImax'].iloc[x] - np.mean(PSII3ANOVA['phiPSIImax'][(PSII3ANOVA['temptemp'] == i) & (PSII3ANOVA['timetime'] == j) & (PSII3ANOVA['Adjusted PFT'] == k)]) + timexSpec[j,k-1] - Timesolo[j] - Speciessolo[k-1] + mu)
-    PSII3ANOVA['ART TtS way'].iloc[x] = (PSII3ANOVA['phiPSIImax'].iloc[x] - Txtime[i,j] - TxSpec[i,k-1] - timexSpec[j,k-1] + Tsolo[i] + Timesolo[j] + Speciessolo[k-1] - mu)
-
-
-PSIITranked3Way = PSII3ANOVA.sort_values(by='ART T way')
-PSIITranked3Way['number'] = PSIITranked3Way['ART T way'].rank()
-PSIItranked3Way = PSII3ANOVA.sort_values(by='ART t way')
-PSIItranked3Way['number'] = PSIItranked3Way['ART t way'].rank()
-PSIISranked3Way = PSII3ANOVA.sort_values(by='ART S way')
-PSIISranked3Way['number'] = PSIISranked3Way['ART S way'].rank()
-PSIITtranked3Way = PSII3ANOVA.sort_values(by='ART Tt way')
-PSIITtranked3Way['number'] = PSIITtranked3Way['ART Tt way'].rank()
-PSIITSranked3Way = PSII3ANOVA.sort_values(by='ART TS way') 
-PSIITSranked3Way['number'] = PSIITSranked3Way['ART TS way'].rank()
-PSIItSranked3Way = PSII3ANOVA.sort_values(by='ART tS way')
-PSIItSranked3Way['number'] = PSIItSranked3Way['ART tS way'].rank()
-PSIIranked3Way = PSII3ANOVA.sort_values(by='ART TtS way')
-PSIIranked3Way['number'] = PSIIranked3Way['ART TtS way'].rank()
 
 # %%
-Pogg = PSIIranked3Way
-dCont = {'rank': Pogg['number'], 'Temp': Pogg['temptemp'], 'Time': Pogg['timetime'], 'Species': Pogg['Adjusted PFT']}
-DfCont = pd.DataFrame(data=dCont)
-model = ols('rank ~ C(Temp) + C(Time) + C(Species) + C(Temp):C(Time) + C(Temp):C(Species) + C(Time):C(Species) + C(Temp):C(Time):C(Species) -1', data=DfCont).fit()
-anova_table = sm.stats.anova_lm(model, typ=3)
-anova_table
+# Method building for reducing PFT impact on residual analysis
+param_span = np.zeros((5,16))
+for i in range(1, 17):
+    dataset = PSIIContr[PSIIContr['Adjusted PFT'] == i]
+    Ordered = dataset.sort_values(by='HeatMid')
+    x = Ordered['HeatMid']
+    x0 = x.iloc[:]
+    y = Ordered['phiPSIImax']
+    y0 = y.iloc[:]
+    # Quad Model run
+    mod = RectangleModel(form='erf')
+    mod.set_param_hint('amplitude', value=0.8, min=0.75, max=0.9)
+    mod.set_param_hint('center1', value=-3, min=-15, max=10)
+    mod.set_param_hint('center2', value=45, min=15, max=60)
+    mod.set_param_hint('sigma1', value=7, min=1, max=12)
+    mod.set_param_hint('sigma2', value=7, min=1, max=12)
+    pars = mod.guess(y0, x=x0)
+    pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
+    pars['center1'].set(value=-6, min=-23, max=7)
+    pars['center2'].set(value=46, min=35, max=57)
+    pars['sigma1'].set(value=7, min=1, max=25)
+    pars['sigma2'].set(value=5, min=1, max=12)
+    out = mod.fit(y, pars, x=x)
+    ps = get_Mod_paramsValues(out)
+    print(ps['val'][:])
+    param_span[:,i-1] = ps['val'][:]
+# %%
+def removed_PFT_resid(dataset):
+    datasetx = dataset['HeatMid']
+    datasety = dataset['phiPSIImax']
+    new_resid = np.zeros(len(dataset), 4)
+    for i in len(datasetx):
+        pft = dataset['Adjusted PFT'][i]
+        new_resid[i,0] = datasetx[i]
+        new_resid[i,1] = datasety[i]
+        new_resid[i,2] = pft
+        new_resid[i,3] = point_resid(datasetx[i], datasety[i],
+                                     param_span[0,pft], param_span[1,pft], param_span[2,pft],
+                                     param_span[3,pft], param_span[4,pft])
+    return new_resid
 # %%
