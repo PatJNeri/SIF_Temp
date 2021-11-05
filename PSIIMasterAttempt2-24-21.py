@@ -258,10 +258,11 @@ def get_setdata_plot(dataset):
                 Ayy = []
                 for i in range(len(Aaa1)):
                        Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
-                print('R-squared : ', r2_score(y, Ayy))
+#                print('R-squared : ', r2_score(y, Ayy))
 
                 # Here the residual of the dataset is calculated
                 resid = (y - Ayy)
+                print(np.sum(resid*resid))
                 # Generate the mean absolute error
                 MAE = (np.sum(abs(resid))/len(resid))
                 print('MAE : ', MAE)
@@ -301,10 +302,10 @@ def get_setdata_plot(dataset):
                 plt.xlabel('Temperature ' + u'\u2103', fontsize=14)
                 #plt.title('Rectangular (erf) model fit of ' + dataset.name +' with uncertainty')
                 plt.grid(True)
-                plt.annotate('$\mathregular{R^{2}}$ - ' + str(round(r2_score(y, Ayy), 2)) + '\nN = ' + str(len(y.index)), xy=(1,1),
-                             xycoords='axes fraction', xytext=(-10, -10), textcoords='offset pixels',
-                             horizontalalignment='right',
-                             verticalalignment='top')
+#                plt.annotate('$\mathregular{R^{2}}$ - ' + str(round(r2_score(y, Ayy), 2)) + '\nN = ' + str(len(y.index)), xy=(1,1),
+#                             xycoords='axes fraction', xytext=(-10, -10), textcoords='offset pixels',
+#                             horizontalalignment='right',
+#                             verticalalignment='top')
                 plt.show()
                 #plt.savefig(dataset.name + 'model5-28-21.JPG')
                 # Below is the attempt at formatting a boxplot figure (can be optimized)

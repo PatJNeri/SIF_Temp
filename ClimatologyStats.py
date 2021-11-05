@@ -66,14 +66,13 @@ def get_set_resid(dataset):
         Ayy = []
         for i in range(len(Aaa1)):
                 Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
-        print('R-squared : ', r2_score(y, Ayy))
 
         # Here the residual of the dataset is calculated
         resid = (y - Ayy)
 
-        return resid
+        return resid, ps
 
-def point_resid(x, y, a, c1, c2, s1, s2):
+def point_resid(x, y, a, c1, s1, c2, s2):
     Aa1 = (x - c1)/s1
     Aaa1 = math.erf(Aa1)
     Aa2 = -(x - c2)/s2
@@ -319,6 +318,50 @@ for i in range(0,35):
         if clim_allmean[j] <= clim_locs_historic.iloc[6,i] <= clim_allmean[j+1]:
             print(i,j)
             rank_clim_locs[6,i] = j     
+
+# %%
+# Method building for reducing PFT impact on residual analysis
+param_span = np.zeros((5,16))
+for i in range(1, 17):
+    dataset = PSIIContr[PSIIContr['Adjusted PFT'] == i]
+    Ordered = dataset.sort_values(by='HeatMid')
+    x = Ordered['HeatMid']
+    x0 = x.iloc[:]
+    y = Ordered['phiPSIImax']
+    y0 = y.iloc[:]
+    # Quad Model run
+    mod = RectangleModel(form='erf')
+    mod.set_param_hint('amplitude', value=0.8, min=0.75, max=0.9)
+    mod.set_param_hint('center1', value=-3, min=-15, max=10)
+    mod.set_param_hint('center2', value=45, min=15, max=60)
+    mod.set_param_hint('sigma1', value=7, min=1, max=12)
+    mod.set_param_hint('sigma2', value=7, min=1, max=12)
+    pars = mod.guess(y0, x=x0)
+    pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
+    pars['center1'].set(value=-6, min=-23, max=7)
+    pars['center2'].set(value=46, min=35, max=57)
+    pars['sigma1'].set(value=7, min=1, max=25)
+    pars['sigma2'].set(value=5, min=1, max=12)
+    out = mod.fit(y, pars, x=x)
+    ps = get_Mod_paramsValues(out)
+    print(ps['val'][:])
+    param_span[:,i-1] = ps['val'][:]
+# %%
+def removed_PFT_resid(dataset):
+    datasetx = dataset['HeatMid']
+    datasety = dataset['phiPSIImax']
+    new_resid = np.zeros((len(dataset), 4))
+    for i in range(0,len(datasetx)):
+        pft = int(dataset['Adjusted PFT'].iloc[i])
+        new_resid[i,0] = datasetx.iloc[i]
+        new_resid[i,1] = datasety.iloc[i]
+        new_resid[i,2] = pft
+        new_resid[i,3] = point_resid(datasetx.iloc[i], datasety.iloc[i],
+                                     param_span[0,pft-1], param_span[1,pft-1], param_span[2,pft-1],
+                                     param_span[3,pft-1], param_span[4,pft-1])
+    return new_resid
+# %%
+all_try_one = removed_PFT_resid(PSIIContr)
 # %%
 # Create the residual column based on all PSIIGEO data
 # Also builds in the columns in an oraginzed by HeatMid for the ANOVA cates
@@ -326,7 +369,8 @@ for i in range(0,35):
 # (to recreate original set, sub back in the # items)
 PSIIClim = PSIIGEO[PSIIGEO['Climate'] == 1]
 Ordered_set = PSIIClim.sort_values(by='HeatMid') #PSIIGEO.sort_values(by='HeatMid')
-Ordered_set['residual'] = get_set_resid(PSIIClim) #get_set_resid(PSIIGEO)
+# Ordered_set['residual'] = get_set_resid(PSIIClim) #get_set_resid(PSIIGEO)
+Ordered_set['residual'] = removed_PFT_resid(PSIIClim)[:,3]
 Ordered_set['loc num'] = Ordered_set['residual']
 Ordered_set['LTMon'] = Ordered_set['residual']
 Ordered_set['LTMean'] = Ordered_set['residual']
@@ -445,46 +489,4 @@ anova_table = sm.stats.anova_lm(model, typ=3)
 anova_table
 
 
-
-# %%
-# Method building for reducing PFT impact on residual analysis
-param_span = np.zeros((5,16))
-for i in range(1, 17):
-    dataset = PSIIContr[PSIIContr['Adjusted PFT'] == i]
-    Ordered = dataset.sort_values(by='HeatMid')
-    x = Ordered['HeatMid']
-    x0 = x.iloc[:]
-    y = Ordered['phiPSIImax']
-    y0 = y.iloc[:]
-    # Quad Model run
-    mod = RectangleModel(form='erf')
-    mod.set_param_hint('amplitude', value=0.8, min=0.75, max=0.9)
-    mod.set_param_hint('center1', value=-3, min=-15, max=10)
-    mod.set_param_hint('center2', value=45, min=15, max=60)
-    mod.set_param_hint('sigma1', value=7, min=1, max=12)
-    mod.set_param_hint('sigma2', value=7, min=1, max=12)
-    pars = mod.guess(y0, x=x0)
-    pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
-    pars['center1'].set(value=-6, min=-23, max=7)
-    pars['center2'].set(value=46, min=35, max=57)
-    pars['sigma1'].set(value=7, min=1, max=25)
-    pars['sigma2'].set(value=5, min=1, max=12)
-    out = mod.fit(y, pars, x=x)
-    ps = get_Mod_paramsValues(out)
-    print(ps['val'][:])
-    param_span[:,i-1] = ps['val'][:]
-# %%
-def removed_PFT_resid(dataset):
-    datasetx = dataset['HeatMid']
-    datasety = dataset['phiPSIImax']
-    new_resid = np.zeros(len(dataset), 4)
-    for i in len(datasetx):
-        pft = dataset['Adjusted PFT'][i]
-        new_resid[i,0] = datasetx[i]
-        new_resid[i,1] = datasety[i]
-        new_resid[i,2] = pft
-        new_resid[i,3] = point_resid(datasetx[i], datasety[i],
-                                     param_span[0,pft], param_span[1,pft], param_span[2,pft],
-                                     param_span[3,pft], param_span[4,pft])
-    return new_resid
-# %%
+ # %%
