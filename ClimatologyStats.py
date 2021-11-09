@@ -16,6 +16,7 @@ import scipy.stats as stt
 import cartopy.crs as ccrs
 from lmfit.models import RectangleModel
 import re
+import random
 # %%
 def get_Mod_paramsValues(output):
         """Getting out values of model params with numerical values
@@ -37,6 +38,7 @@ def get_set_resid(dataset):
         x0 = x.iloc[:]
         y = Ordered['phiPSIImax']
         y0 = y.iloc[:]
+        rang = [np.min(x), np.max(x)]
         # Quad Model run
         mod = RectangleModel(form='erf')
         mod.set_param_hint('amplitude', value=0.8, min=0.75, max=0.9)
@@ -51,7 +53,7 @@ def get_set_resid(dataset):
         pars['sigma1'].set(value=7, min=1, max=25)
         pars['sigma2'].set(value=5, min=1, max=12)
         out = mod.fit(y, pars, x=x)
-        print(out.fit_report())
+        #print(out.fit_report())
         ps = get_Mod_paramsValues(out)
         A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
         # produces dataset for r-squared
@@ -70,7 +72,7 @@ def get_set_resid(dataset):
         # Here the residual of the dataset is calculated
         resid = (y - Ayy)
 
-        return resid, ps
+        return resid, ps, rang
 
 def point_resid(x, y, a, c1, s1, c2, s2):
     Aa1 = (x - c1)/s1
@@ -82,7 +84,6 @@ def point_resid(x, y, a, c1, s1, c2, s2):
     resid = (y - Ayy)
     return resid
 # %%
-print(os.getcwd())
 PSIImaster = pd.read_excel('PSIImax-Master2-24.xlsx', engine='openpyxl')
 PSIImaster['Clade A'] = PSIImaster['Clade A'].astype(str)
 PSIImaster['Clade B'] = PSIImaster['Clade B'].astype(str)
@@ -490,3 +491,140 @@ anova_table
 
 
  # %%
+chooz = 100
+itt = 600
+set_choice = Ordered_set
+
+point_spread = np.zeros((4,itt))
+#for i in range(0,itt):
+#    rand_set =
+
+# %%
+# used Ordered_set for this section
+# Adds actual values based on location to allow exclusion methods
+Ordered_set['LTval'] = Ordered_set['LTMean']
+Ordered_set['HTval'] = Ordered_set['HTMean']
+Ordered_set['CLval'] = Ordered_set['CLMean']
+for i in range (0, len(Ordered_set['HTExt'])):
+    j = Ordered_set['loc num'].iloc[i]
+    Ordered_set['LTval'].iloc[i] = clim_locs_historic.iloc[1, int(j)]
+    Ordered_set['HTval'].iloc[i] = clim_locs_historic.iloc[4, int(j)]
+    Ordered_set['CLval'].iloc[i] = clim_locs_historic.iloc[6, int(j)]
+
+ltm_min = clim_locs_historic.iloc[1,:].min()
+ltm_max = clim_locs_historic.iloc[1,:].max()
+htm_min = clim_locs_historic.iloc[4,:].min()
+htm_max = clim_locs_historic.iloc[4,:].max()
+clm_min = clim_locs_historic.iloc[6,:].min()
+clm_max = clim_locs_historic.iloc[6,:].max()
+
+# %%
+def ran_method(dataset, num):
+    ltmean_set = np.zeros((10,num))
+    htmean_set = np.zeros((10,num))
+    clmean_set = np.zeros((10,num))
+    
+    step_l = (ltm_max-ltm_min)/(100)
+    step_h = (htm_max-htm_min)/(100)
+    step_c = (clm_max-clm_min)/(100)
+
+    for i in range(0,num):
+        f1, g1 = random.sample(list(np.arange(ltm_min, ltm_max, step_l)), 2)
+        a1, b1 = np.min([f1,g1]), np.max([f1,g1])
+        f2, g2 = random.sample(list(np.arange(htm_min, htm_max, step_h)), 2)
+        a2, b2 = np.min([f2,g2]), np.max([f2,g2])
+        f3, g3 = random.sample(list(np.arange(clm_min, clm_max, step_c)), 2)
+        a3, b3 = np.min([f3,g3]), np.max([f3,g3])
+
+        new_set1 = dataset[(dataset['LTval'] > a1) & (dataset['LTval'] < b1)]
+        new_set2 = dataset[(dataset['HTval'] > a2) & (dataset['HTval'] < b2)]
+        new_set3 = dataset[(dataset['CLval'] > a3) & (dataset['CLval'] < b3)]
+
+        n1 = len(new_set1['HeatMid'])
+        n2 = len(new_set2['HeatMid'])
+        n3 = len(new_set3['HeatMid'])
+
+        ltmean_set[0,i] = a1
+        ltmean_set[1,i] = b1
+        ltmean_set[2,i] = n1
+        ltmean_set[3,i] = np.min(new_set1['HeatMid'])
+        ltmean_set[4,i] = np.max(new_set1['HeatMid'])
+        if n1 > 30:
+            ltmean_set[5:,i] = get_set_resid(new_set1)[1]['val'][:]
+        else:
+            ltmean_set[5:,i] = -999
+
+        htmean_set[0,i] = a2
+        htmean_set[1,i] = b2
+        htmean_set[2,i] = n2
+        htmean_set[3,i] = np.min(new_set2['HeatMid'])
+        htmean_set[4,i] = np.max(new_set2['HeatMid'])
+        if n2 > 30:
+            htmean_set[5:,i] = get_set_resid(new_set2)[1]['val'][:]
+        else:
+            htmean_set[5:,i] = -999
+
+        clmean_set[0,i] = a3
+        clmean_set[1,i] = b3
+        clmean_set[2,i] = n3
+        clmean_set[3,i] = np.min(new_set3['HeatMid'])
+        clmean_set[4,i] = np.max(new_set3['HeatMid'])
+        if n3 > 30:
+            clmean_set[5:,i] = get_set_resid(new_set3)[1]['val'][:]
+        else:
+            clmean_set[5:,i] = -999
+
+
+    return ltmean_set, htmean_set, clmean_set
+
+
+def shrink_method(dataset, num):
+    ltmean_set = np.zeros((9,num))
+    htmean_set = np.zeros((9,num))
+    
+    step_l = (ltm_max-ltm_min)/(num)
+    step_h = (htm_max-htm_min)/(num)
+
+    for i in range(0,num):
+        a1 = ltm_min + i*step_l
+        a2 = htm_max - i*step_h
+
+        new_set1 = dataset[dataset['LTval'] > a1]
+        new_set2 = dataset[dataset['HTval'] < a2]
+
+        n1 = len(new_set1['HeatMid'])
+        n2 = len(new_set2['HeatMid'])
+
+        ltmean_set[0,i] = a1
+        ltmean_set[1,i] = n1
+        ltmean_set[2,i] = np.min(new_set1['HeatMid'])
+        ltmean_set[3,i] = np.max(new_set1['HeatMid'])
+        if n1 > 30:
+            ltmean_set[4:,i] = get_set_resid(new_set1)[1]['val'][:]
+        else:
+            ltmean_set[4:,i] = -999
+
+        htmean_set[0,i] = a2
+        htmean_set[1,i] = n2
+        htmean_set[2,i] = np.min(new_set2['HeatMid'])
+        htmean_set[3,i] = np.max(new_set2['HeatMid'])
+        if n1 > 30:
+            htmean_set[4:,i] = get_set_resid(new_set2)[1]['val'][:]
+        else:
+            htmean_set[4:,i] = -999
+
+
+    return ltmean_set, htmean_set
+
+
+def quant_method(dataset, num):
+    return 47
+
+
+# %%
+try1_1, try1_2, try1_3 = ran_method(Ordered_set, 1000)
+# method for plotting parameters to remove the bad -999 runs
+plt.hist(np.where(try1_1[5,:]==-999, np.nan, try1_1[5,:]))
+# %%
+try2_1, try2_2 = shrink_method(Ordered_set, 50)
+
