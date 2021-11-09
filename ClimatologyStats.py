@@ -7,13 +7,13 @@ from numpy.core.function_base import linspace
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import statsmodels.api as sm
-from statsmodels.formula.api import ols
-from statsmodels.stats.anova import anova_lm
+#import statsmodels.api as sm
+#from statsmodels.formula.api import ols
+#from statsmodels.stats.anova import anova_lm
 import math
 from matplotlib import transforms
 import scipy.stats as stt
-import cartopy.crs as ccrs
+#import cartopy.crs as ccrs
 from lmfit.models import RectangleModel
 import re
 import random
@@ -622,9 +622,35 @@ def quant_method(dataset, num):
 
 
 # %%
-try1_1, try1_2, try1_3 = ran_method(Ordered_set, 1000)
+try1_1, try1_2, try1_3 = ran_method(Ordered_set, 1500)
 # method for plotting parameters to remove the bad -999 runs
 plt.hist(np.where(try1_1[5,:]==-999, np.nan, try1_1[5,:]))
+
+# %%
+a = [try1_1[5,:] == -999]
+b = [try1_2[5,:] == -999]
+c = [try1_3[5,:] == -999]
+dry1_1 = np.ma.masked_array(try1_1, mask=[a,a,a,a,a,a,a,a,a,a])
+dry1_2 = np.ma.masked_array(try1_2, mask=[b,b,b,b,b,b,b,b,b,b])
+dry1_3 = np.ma.masked_array(try1_3, mask=[c,c,c,c,c,c,c,c,c,c])
+
+# %%
+x = dry1_1[2,:]
+y = dry1_1[8,:]
+z = dry1_1[9,:]
+
+# %%
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.scatter(x,y,z, marker='o')
+
+# %%
+fig, ax = plt.subplots()
+gap = ax.scatter(y,z, c=x, cmap='jet')
+d = plt.colorbar(gap)
+ax.set_xlabel('y')
+ax.set_ylabel('z')
+d.set_label('x')
 # %%
 try2_1, try2_2 = shrink_method(Ordered_set, 50)
 
