@@ -635,9 +635,15 @@ dry1_2 = np.ma.masked_array(try1_2, mask=[b,b,b,b,b,b,b,b,b,b])
 dry1_3 = np.ma.masked_array(try1_3, mask=[c,c,c,c,c,c,c,c,c,c])
 
 # %%
+<<<<<<< Updated upstream
 x = dry1_3[2,:]
 y = dry1_3[8,:]
 z = dry1_3[9,:]
+=======
+x = dry1_2[1,:]
+y = dry1_2[6,:]
+z = dry1_2[7,:]
+>>>>>>> Stashed changes
 
 # %%
 fig = plt.figure()
