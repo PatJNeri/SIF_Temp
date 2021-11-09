@@ -635,9 +635,9 @@ dry1_2 = np.ma.masked_array(try1_2, mask=[b,b,b,b,b,b,b,b,b,b])
 dry1_3 = np.ma.masked_array(try1_3, mask=[c,c,c,c,c,c,c,c,c,c])
 
 # %%
-x = dry1_1[2,:]
-y = dry1_1[8,:]
-z = dry1_1[9,:]
+x = dry1_3[2,:]
+y = dry1_3[8,:]
+z = dry1_3[9,:]
 
 # %%
 fig = plt.figure()
@@ -654,3 +654,14 @@ d.set_label('x')
 # %%
 try2_1, try2_2 = shrink_method(Ordered_set, 50)
 
+aa = [try2_1[5,:] == -999]
+bb = [try2_2[5,:] == -999]
+dry2_1 = np.ma.masked_array(try2_1, mask=[aa,aa,aa,aa,aa,aa,aa,aa,aa])
+dry2_2 = np.ma.masked_array(try2_2, mask=[bb,bb,bb,bb,bb,bb,bb,bb,bb])
+
+
+# %%
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.scatter(dry2_1[5,:40],dry2_1[6,:40],dry2_1[1,:40], marker='o')
+# %%
