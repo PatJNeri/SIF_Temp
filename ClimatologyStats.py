@@ -617,10 +617,60 @@ def shrink_method(dataset, num):
     return ltmean_set, htmean_set
 
 
-def quant_method(dataset, num):
-    return 47
+def quant_method(dataset, percent):
+    gap = int(100 - percent)
 
+    ltmean_set = np.zeros((9,gap))
+    htmean_set = np.zeros((9,gap))
+    clmean_set = np.zeros((9,gap))
 
+    for i in range(0, gap):
+        a = i
+        b = percent + i
+
+        low_q1 = np.quantile(clim_locs_historic.iloc[1,:], a/100)
+        high_q1 = np.quantile(clim_locs_historic.iloc[1,:], b/100)
+        low_q2 = np.quantile(clim_locs_historic.iloc[4,:], a/100)
+        high_q2 = np.quantile(clim_locs_historic.iloc[4,:], b/100)
+        low_q3 = np.quantile(clim_locs_historic.iloc[6,:], a/100)
+        high_q3 = np.quantile(clim_locs_historic.iloc[6,:], b/100)
+
+        new_set1 = dataset[(dataset['LTval'] > low_q1) & (dataset['LTval'] < high_q1)]
+        new_set2 = dataset[(dataset['HTval'] > low_q2) & (dataset['HTval'] < high_q2)]
+        new_set3 = dataset[(dataset['CLval'] > low_q3) & (dataset['CLval'] < high_q3)]
+
+        n1 = len(new_set1['HeatMid'])
+        n2 = len(new_set2['HeatMid'])
+        n3 = len(new_set3['HeatMid'])
+
+        ltmean_set[0,i] = (a + b)/2
+        ltmean_set[1,i] = n1
+        ltmean_set[2,i] = np.min(new_set1['HeatMid'])
+        ltmean_set[3,i] = np.max(new_set1['HeatMid'])
+        if n1 > 30:
+            ltmean_set[4:,i] = get_set_resid(new_set1)[1]['val'][:]
+        else:
+            ltmean_set[4:,i] = -999
+
+        htmean_set[0,i] = (a + b)/2
+        htmean_set[1,i] = n2
+        htmean_set[2,i] = np.min(new_set2['HeatMid'])
+        htmean_set[3,i] = np.max(new_set2['HeatMid'])
+        if n2 > 30:
+            htmean_set[4:,i] = get_set_resid(new_set2)[1]['val'][:]
+        else:
+            htmean_set[4:,i] = -999
+
+        clmean_set[0,i] = (a + b)/2
+        clmean_set[1,i] = n3
+        clmean_set[2,i] = np.min(new_set3['HeatMid'])
+        clmean_set[3,i] = np.max(new_set3['HeatMid'])
+        if n3 > 30:
+            clmean_set[4:,i] = get_set_resid(new_set3)[1]['val'][:]
+        else:
+            clmean_set[4:,i] = -999        
+
+    return ltmean_set, htmean_set, clmean_set
 # %%
 try1_1, try1_2, try1_3 = ran_method(Ordered_set, 1500)
 # method for plotting parameters to remove the bad -999 runs
@@ -664,4 +714,69 @@ dry2_2 = np.ma.masked_array(try2_2, mask=[bb,bb,bb,bb,bb,bb,bb,bb,bb])
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 ax.scatter(dry2_1[5,:40],dry2_1[6,:40],dry2_1[1,:40], marker='o')
+
 # %%
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+#ax.view_init(80, -93) #adjusts the view (elevation and azimuth angles)
+x = np.linspace(-32, 63, 400)
+for i in range(0,50):
+    z_set = np.full(400, 2*i)
+    if dry2_1[5,i] != np.nan:
+        a, m1, s1, m2, s2 = dry2_1[4:, i]
+        Aa1 = (x - m1)/s1
+        Aaa1 = []
+        for i in range(len(Aa1)):
+                Aaa1.append(math.erf(Aa1[i]))
+        Aa2 = -(x - m2)/s2
+        Aaa2 = []
+        for i in range(len(Aa2)):
+                Aaa2.append(math.erf(Aa2[i]))
+        Ayy = []
+        for i in range(len(Aaa1)):
+                Ayy.append((a/2)* (Aaa1[i] + Aaa2[i]))
+        ax.plot(x, z_set, Ayy)
+
+# %%
+# improve by making wireframe method
+# https://jakevdp.github.io/PythonDataScienceHandbook/04.12-three-dimensional-plotting.html
+z_set = np.zeros((401, 50))
+x = np.linspace(-35, 65, 401)
+
+for j in range(0,50):
+    a, m1, s1, m2, s2 = dry2_2[4:, j] # this part to change
+    Aa1 = (x - m1)/s1
+    Aaa1 = []
+    for i in range(len(Aa1)):
+            Aaa1.append(math.erf(Aa1[i]))
+    Aa2 = -(x - m2)/s2
+    Aaa2 = []
+    for i in range(len(Aa2)):
+            Aaa2.append(math.erf(Aa2[i]))
+    Ayy = []
+    for i in range(len(Aaa1)):
+        Ayy.append((a/2)* (Aaa1[i] + Aaa2[i]))
+    z_set[:,j] = Ayy
+
+fig, ax = plt.subplots()
+gap = ax.pcolor(z_set, cmap='jet')
+ax.set_yticklabels(x[::50])
+d = plt.colorbar(gap)
+
+# %%
+try3_1, try3_2, try3_3 = quant_method(Ordered_set, 50)
+# %%
+def f(x, y):
+    a, m1, s1, m2, s2 = dry2_1[4:, int(y)]
+    Aa1 = (x - m1)/s1
+    Aaa1 = []
+    for i in range(len(Aa1)):
+            Aaa1.append(math.erf(Aa1[i]))
+    Aa2 = -(x - m2)/s2
+    Aaa2 = []
+    for i in range(len(Aa2)):
+            Aaa2.append(math.erf(Aa2[i]))
+    Ayy = []
+    for i in range(len(Aaa1)):
+            Ayy.append((a/2)* (Aaa1[i] + Aaa2[i]))
+    return Ayy
