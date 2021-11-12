@@ -685,15 +685,9 @@ dry1_2 = np.ma.masked_array(try1_2, mask=[b,b,b,b,b,b,b,b,b,b])
 dry1_3 = np.ma.masked_array(try1_3, mask=[c,c,c,c,c,c,c,c,c,c])
 
 # %%
-<<<<<<< Updated upstream
 x = dry1_3[2,:]
 y = dry1_3[8,:]
 z = dry1_3[9,:]
-=======
-x = dry1_2[1,:]
-y = dry1_2[6,:]
-z = dry1_2[7,:]
->>>>>>> Stashed changes
 
 # %%
 fig = plt.figure()
@@ -750,7 +744,7 @@ z_set = np.zeros((401, 50))
 x = np.linspace(-35, 65, 401)
 
 for j in range(0,50):
-    a, m1, s1, m2, s2 = dry2_2[4:, j] # this part to change
+    a, m1, s1, m2, s2 = dry2_1[4:, j] # this part to change
     Aa1 = (x - m1)/s1
     Aaa1 = []
     for i in range(len(Aa1)):
@@ -766,14 +760,19 @@ for j in range(0,50):
 
 fig, ax = plt.subplots()
 gap = ax.pcolor(z_set, cmap='jet')
+ax.set_title('dry2_1 color scheme shrink')
 ax.set_yticklabels(x[::50])
+ax.set_xticklabels(dry2_1[0,::10], rotation=60)
 d = plt.colorbar(gap)
 
 # %%
 try3_1, try3_2, try3_3 = quant_method(Ordered_set, 50)
 # %%
-def f(x, y):
-    a, m1, s1, m2, s2 = dry2_1[4:, int(y)]
+z_set = np.zeros((401, 50))
+x = np.linspace(-35, 65, 401)
+
+for j in range(0,50):
+    a, m1, s1, m2, s2 = try3_3[4:, j] # this part to change
     Aa1 = (x - m1)/s1
     Aaa1 = []
     for i in range(len(Aa1)):
@@ -784,5 +783,13 @@ def f(x, y):
             Aaa2.append(math.erf(Aa2[i]))
     Ayy = []
     for i in range(len(Aaa1)):
-            Ayy.append((a/2)* (Aaa1[i] + Aaa2[i]))
-    return Ayy
+        Ayy.append((a/2)* (Aaa1[i] + Aaa2[i]))
+    z_set[:,j] = Ayy
+
+fig, ax = plt.subplots()
+gap = ax.pcolor(z_set, cmap='jet')
+ax.set_title('try3_3 color scheme quantile')
+ax.set_yticklabels(x[::50])
+ax.set_xticklabels(try3_3[0,::10], rotation=60)
+d = plt.colorbar(gap)
+# %%
