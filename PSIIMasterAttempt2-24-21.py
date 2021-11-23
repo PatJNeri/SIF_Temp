@@ -1070,7 +1070,7 @@ def carlo_stats(dataset):
     pars['center1'].set(value=-6, min=-23, max=7)
     pars['center2'].set(value=46, min=35, max=57)
     pars['sigma1'].set(value=7, min=1, max=25)
-    pars['sigma2'].set(value=5, min=1, max=12)
+    pars['sigma2'].set(value=5, min=1, max=13)
     out = mod.fit(y, pars, x=x)
     ps = get_Mod_paramsValues(out)
     A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
