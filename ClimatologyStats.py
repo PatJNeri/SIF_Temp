@@ -7,9 +7,9 @@ from numpy.core.function_base import linspace
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-#import statsmodels.api as sm
-#from statsmodels.formula.api import ols
-#from statsmodels.stats.anova import anova_lm
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+from statsmodels.stats.anova import anova_lm
 import math
 from matplotlib import transforms
 import scipy.stats as stt
@@ -489,16 +489,6 @@ model = ols('rank ~ C(One) + C(Two) + C(Three) + C(One):C(Two) + C(One):C(Three)
 anova_table = sm.stats.anova_lm(model, typ=3)
 anova_table
 
-
- # %%
-chooz = 100
-itt = 600
-set_choice = Ordered_set
-
-point_spread = np.zeros((4,itt))
-#for i in range(0,itt):
-#    rand_set =
-
 # %%
 # used Ordered_set for this section
 # Adds actual values based on location to allow exclusion methods
@@ -586,10 +576,10 @@ def shrink_method(dataset, num):
     step_h = (htm_max-htm_min)/(num)
 
     for i in range(0,num):
-        a1 = ltm_min + i*step_l
+        a1 = ltm_max - i*step_l
         a2 = htm_max - i*step_h
 
-        new_set1 = dataset[dataset['LTval'] > a1]
+        new_set1 = dataset[dataset['LTval'] < a1]
         new_set2 = dataset[dataset['HTval'] < a2]
 
         n1 = len(new_set1['HeatMid'])
@@ -718,9 +708,9 @@ ax.scatter(dry2_1[5,:40],dry2_1[6,:40],dry2_1[1,:40], marker='o')
 # %%
 fig = plt.figure()
 ax = plt.axes(projection='3d')
-#ax.view_init(80, -93) #adjusts the view (elevation and azimuth angles)
+ax.view_init(50, -100) #adjusts the view (elevation and azimuth angles)
 x = np.linspace(-32, 63, 400)
-for i in range(0,50):
+for i in range(0,45):
     z_set = np.full(400, 2*i)
     if dry2_1[5,i] != np.nan:
         a, m1, s1, m2, s2 = dry2_1[4:, i]
@@ -736,6 +726,34 @@ for i in range(0,50):
         for i in range(len(Aaa1)):
                 Ayy.append((a/2)* (Aaa1[i] + Aaa2[i]))
         ax.plot(x, z_set, Ayy)
+# %%
+fig = plt.figure(figsize=(8,8))
+ax = plt.axes()
+x = np.linspace(-32, 63, 400)
+for i in [0,10,20,30,40]:
+    name = str(i)
+    name2 = round(dry2_1[0,i], 2)
+    print(name2)
+    if dry2_1[5,i] != np.nan:
+        a, m1, s1, m2, s2 = dry2_1[4:, i]
+        Aa1 = (x - m1)/s1
+        Aaa1 = []
+        for i in range(len(Aa1)):
+                Aaa1.append(math.erf(Aa1[i]))
+        Aa2 = -(x - m2)/s2
+        Aaa2 = []
+        for i in range(len(Aa2)):
+                Aaa2.append(math.erf(Aa2[i]))
+        Ayy = []
+        for i in range(len(Aaa1)):
+                Ayy.append((a/2)* (Aaa1[i] + Aaa2[i]))
+        ax.plot(x, Ayy, label=str(name2))
+ax.grid(True)
+ax.set_ylim((0,0.85))
+ax.set_xlabel('Experiment Measured Temperature (C)')
+ax.set_ylabel('Maximum Quantum Efficiency of PSII')
+ax.set_title('Selected Models based on HTMean subset')
+ax.legend(title='Avg. winter max. temp. (K)')
 
 # %%
 # improve by making wireframe method
@@ -766,13 +784,36 @@ ax.set_xticklabels(dry2_1[0,::10], rotation=60)
 d = plt.colorbar(gap)
 
 # %%
-try3_1, try3_2, try3_3 = quant_method(Ordered_set, 50)
-# %%
-z_set = np.zeros((401, 50))
-x = np.linspace(-35, 65, 401)
+q = 25
+try3_1, try3_2, try3_3 = quant_method(Ordered_set, q)
 
-for j in range(0,50):
-    a, m1, s1, m2, s2 = try3_3[4:, j] # this part to change
+
+plt.plot(try3_1[0,:], try3_1[1,:], label='try3_1')
+plt.plot(try3_2[0,:], try3_2[1,:], label='try3_2')
+plt.plot(try3_3[0,:], try3_3[1,:], label='try3_3')
+plt.title('Axis # of points by Quantile (20)')
+plt.xlabel('Quantile range center')
+plt.ylabel('# of points')
+plt.legend()
+
+# %%
+plt.plot(try3_1[0,:], try3_1[5,:], '-g')
+plt.plot(try3_2[0,:], try3_2[5,:], '-r')
+plt.plot(try3_3[0,:], try3_3[5,:], '-b')
+plt.plot(try3_1[0,:], try3_1[7,:], '-g')
+plt.plot(try3_2[0,:], try3_2[7,:], '-r')
+plt.plot(try3_3[0,:], try3_3[7,:], '-b')
+plt.fill_between(try3_1[0,:], try3_1[7,:], try3_1[5,:], alpha=0.3, color='g', )
+plt.fill_between(try3_2[0,:], try3_2[7,:], try3_2[5,:], alpha=0.3, color='r')
+plt.fill_between(try3_3[0,:], try3_3[7,:], try3_3[5,:], alpha=0.3, color='b')
+plt.ylim((-40, 65))
+
+
+z_set = np.zeros((401, 100-q))
+x = np.linspace(-35, 65, 401)
+#%%
+for j in range(0,100-q):
+    a, m1, s1, m2, s2 = try3_1[4:, j] # this part to change
     Aa1 = (x - m1)/s1
     Aaa1 = []
     for i in range(len(Aa1)):
@@ -788,8 +829,24 @@ for j in range(0,50):
 
 fig, ax = plt.subplots()
 gap = ax.pcolor(z_set, cmap='jet')
-ax.set_title('try3_3 color scheme quantile')
+ax.set_title('try3_1 color scheme quantile 25')
 ax.set_yticklabels(x[::50])
-ax.set_xticklabels(try3_3[0,::10], rotation=60)
+#ax.set_xticklabels(try3_1[0,::10], rotation=60)
 d = plt.colorbar(gap)
+# %%
+fig, ax = plt.subplots(nrows=3, ncols=2, figsize=(5,10))
+for q in [80, 75, 66, 60, 50, 40, 33, 25]:
+    try31, try32, try33 = quant_method(Ordered_set, q)
+    ax[0,0].plot(try31[5,:], try31[6,:], 'ob')
+    ax[0,1].plot(try31[7,:], try31[8,:], 'og')
+    #ax[0].set_xlim((-32, 65))
+    #ax[0].set_ylim((0, 25))
+    ax[1,0].plot(try32[5,:], try32[6,:], 'ob')
+    ax[1,1].plot(try32[7,:], try32[8,:], 'og')
+    #ax[1].set_xlim((-32, 65))
+    #ax[1].set_ylim((0, 25))
+    ax[2,0].plot(try33[5,:], try33[6,:], 'ob')
+    ax[2,1].plot(try33[7,:], try33[8,:], 'og')
+    #ax[2].set_xlim((-32, 65))
+    #ax[2].set_ylim((0, 25))
 # %%
