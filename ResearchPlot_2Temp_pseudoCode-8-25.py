@@ -437,6 +437,23 @@ def crossmodelPDF(data, width=5):
 # Produce a PFT spread plot
 # Currently noticing a slight shifting within the R2 when running with
 # Either diff init params or param limits (specifically S1, S2 when put at 16)
+names = ['needleleaf evergreen temp tree',
+         'needleleaf evergreen boreal tree',
+         'needleleaf deciduous boreal tree',
+         'broadleaf evergreen trop tree',
+         'broadleaf evergreen temp tree',
+         'broadleaf deciduous trop tree',
+         'broadleaf deciduous temp tree',
+         'broadleaf deci boreal tree',
+         'broadleaf evergreen shrub',
+         'broadleaf deciduous temp shrub',
+         'broadleaf deciduous boreal shrub',
+         'c3 arctic grass',
+         'c3 non-arctic grass',
+         'c4 grass',
+         'c3 crop',
+         'c4 crop']
+
 fig, axs = plt.subplots(ncols=4, nrows=4, constrained_layout=True, figsize=(16,16))
 for i in range(0,4):
     for j in range(0,4):
@@ -446,7 +463,8 @@ for i in range(0,4):
         x0 = x.iloc[:]
         y = Ordered['phiPSIImax']
         y0 = y.iloc[:]
-        axs[i,j].set_title('PFT ' + str(pft), loc='left')
+        axs[i,j].set_title(names[pft-1], loc='left')
+        #axs[i,j].set_title('PFT ' + str(pft), loc='left')
         mod = RectangleModel(form='erf')
         pars = mod.guess(y0, x=x0)
         #pars['amplitude'].set(value=0.8, min=0.78, max=0.93)
@@ -522,6 +540,8 @@ for i in range(0,4):
         axs[i,j].set_xticks([-20,0,20,40,60])
         axs[i,j].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8])
         axs[i,j].set_xticklabels((-20,0,20,40,60))
+        #axs[i,j].set_xlabel(names[pft-1])
+        axs[i,j].set_ylim((-0.05,1))
         axs[i,j].grid(True)
 #                plt.annotate('$\mathregular{R^{2}}$ = ' + str(round(r2_score(y, Ayy), 2)) + '\nN = ' + str(len(y.index)), xy=(1,1),
 #                             xycoords='axes fraction', xytext=(-10, -10), textcoords='offset pixels',
@@ -552,29 +572,27 @@ ax4.yaxis.set_visible(False)
 
 # %%
 # Produces 4 time series side-by-side plot
-pftnum = input('Enter PFT (1 - 16)')
+names = ['t < 48 hr', 't < 336 hr', 't ' + u'\u2265' +  '336 hr']
+#pftnum = input('Enter PFT (1 - 16)')
 timedata = PSIIContr.sort_values(by='HeatMid')
 print('Total PFT data amount - ' + str(len(timedata['HeatMid'])))
-fig, axs = plt.subplots(ncols=4, nrows=1, constrained_layout=True, figsize=(18,5))
+fig, axs = plt.subplots(ncols=4, nrows=1, figsize=(18,5), sharey=True)
+fig.tight_layout(pad=3.0)
+axs[0].set_ylabel('Maximum Quantum \nEfficiency of PSII', fontsize=14)
 for i in range(0, 3):
     timedata1 = timedata[timedata['Climate'] == 0]
     Ordered = timedata1[timedata1['timetime'] == (i+1)]
     if len(Ordered['HeatMid']) < 6:
         axs[i].text(0.5, 0.5, "Not Enough Data", va="center", ha="center")
-        axs[i].set_title('PFT ' + str(pftnum) + '  t=' + str(i+1), loc='left')
+        axs[i].set_title('All data with Duration ' + '  t=' + str(i+1), loc='left')
     else:
         x = Ordered['HeatMid']
         x0 = x.iloc[:]
         y = Ordered['phiPSIImax']
         y0 = y.iloc[:]
-        axs[i].set_title('PFT ' + str(pftnum) + '  t=' + str(i+1) + '   n = ' + str(len(x)), loc='left')
+        axs[i].set_title(names[i], fontsize=18, loc='left')
         mod = RectangleModel(form='erf')
         pars = mod.guess(y0, x=x0)
-        #pars['amplitude'].set(value=0.8, min=0.78, max=0.93)
-        #pars['center1'].set(value=-6, min=-12, max=7)
-        #pars['center2'].set(value=40, min=35, max=57)
-        #pars['sigma1'].set(value=7, min=1, max=12)
-        #pars['sigma2'].set(value=5, min=1, max=12)
         # Monte Carlo Method
         pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
         pars['center1'].set(value=-6, min=-23, max=7)
@@ -583,8 +601,8 @@ for i in range(0, 3):
         pars['sigma2'].set(value=5, min=1, max=13)
         out = mod.fit(y, pars, x=x)
         ps = get_Mod_paramsValues(out)
-        print('For t = ' + str(i+1))
-        print(ps)
+        #print('For t = ' + str(i+1))
+        #print(ps)
         A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
         # produces dataset for r-squared
         Aa1 = (x - m1)/s1
@@ -601,7 +619,11 @@ for i in range(0, 3):
         correlation_matrix = np.corrcoef(y, Ayy)
         correlation_xy = correlation_matrix[0,1]
         r_squared = correlation_xy**2
-        axs[i].set_title('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), loc='right')
+        axs[i].annotate('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)) + '\nN = ' + str(len(y.index)), xy=(0.5,1),
+        xycoords='axes fraction', xytext=(-10, -10), textcoords='offset pixels',
+        horizontalalignment='center',
+        verticalalignment='top', fontsize=12)
+        #axs[i].set_title('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), loc='right')
         # Below is the attempt at formatting a boxplot figure (can be optimized)
         TrialBox = timedata1[timedata1['timetime'] == i+1]
         Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -12)] #-7
@@ -630,6 +652,7 @@ for i in range(0, 3):
         axs[i].plot(Ordered['HeatMid'], Ordered['phiPSIImax'], 'o')
         axs[i].set_xlim([-35, 65])
         axs[i].set_ylim([0.0, 1])
+        axs[i].set_xlabel('Experimental Temperature ' + u'\u2103', fontsize=14)
         x2 = np.linspace(-32, 63, 500)
         Aa12 = (x2 - m1)/s1
         Aaa12 = []
@@ -643,6 +666,7 @@ for i in range(0, 3):
         for q in range(len(Aaa12)):
             Ayy2.append((A/2)* (Aaa12[q] + Aaa22[q]))
         axs[i].plot(x2, Ayy2, 'r-')
+        axs[i].vlines([m1, m2], 0, 1)
         axs[i].set_xticks([-20,0,20,40,60])
         axs[i].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8])
         axs[i].set_xticklabels((-20,0,20,40,60))
@@ -651,20 +675,15 @@ for i in range(0, 3):
 OrderedClim = timedata[timedata['Climate'] == 1]
 if len(OrderedClim['HeatMid']) == 0:
     axs[3].text(0.5, 0.5, "No Data", va="center", ha="center")
-    axs[3].set_title('PFT ' + str(pftnum) + ' Climate Data', loc='left')
+    axs[3].set_title('All Climate associated data', loc='left')
 else:
     x = OrderedClim['HeatMid']
     x0 = x.iloc[:]
     y = OrderedClim['phiPSIImax']
     y0 = y.iloc[:]
-    axs[3].set_title('PFT ' + str(pftnum) + ' Climate Data   n = ' + str(len(x)), loc='left')
+    axs[3].set_title('Climate Effected Data', loc='left', fontsize=18)
     mod = RectangleModel(form='erf')
     pars = mod.guess(y0, x=x0)
-    #pars['amplitude'].set(value=0.8, min=0.78, max=0.93)
-    #pars['center1'].set(value=-6, min=-12, max=7)
-    #pars['center2'].set(value=40, min=35, max=57)
-    #pars['sigma1'].set(value=7, min=1, max=12)
-    #pars['sigma2'].set(value=5, min=1, max=12)
     # Monte Carlo results
     pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
     pars['center1'].set(value=-6, min=-23, max=7)
@@ -692,7 +711,11 @@ else:
     correlation_matrix = np.corrcoef(y, Ayy)
     correlation_xy = correlation_matrix[0,1]
     r_squared = correlation_xy**2
-    axs[3].set_title('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), loc='right')
+    axs[3].annotate('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), xy=(0.5,1),
+        xycoords='axes fraction', xytext=(-10, -10), textcoords='offset pixels',
+        horizontalalignment='center',
+        verticalalignment='top', fontsize=12)
+    #axs[3].set_title('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), loc='right')
     # Below is the attempt at formatting a boxplot figure (can be optimized)
     TrialBox = timedata[timedata['Climate'] == 1]
     Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -12)] #-7
@@ -719,8 +742,10 @@ else:
                         positions=(-14.5, -4.5, 5.5, 15.5, 25.5, 35.5, 45.5, 55.5,
                                     -9.5, 0.5, 10.5, 20.5, 30.5, 40.5, 50.5, 60.5), widths=5)        
     axs[3].plot(OrderedClim['HeatMid'], OrderedClim['phiPSIImax'], 'o')
+    axs[3].vlines([m1, m2], 0, 1)
     axs[3].set_xlim([-35, 65])
     axs[3].set_ylim([0.0, 1])
+    axs[3].set_xlabel('Experimental Temperature ' + u'\u2103', fontsize=14)
     x2 = np.linspace(-32, 63, 500)
     Aa12 = (x2 - m1)/s1
     Aaa12 = []
@@ -790,4 +815,401 @@ for i in range(0,4):
         axs[i,j].plot(y, Ayy, 'ro')
         axs[i,j].plot(x2, x2, '-k')
         axs[i,j].grid(True)
+# %%
+# AGU Selected 12 PFT plot (12-7)
+names = ['Needleleaf Evergreen Temperate Tree',
+         'Needleleaf Evergreen Boreal Tree',
+         'Needleleaf Deciduous Boreal Tree',
+         'Broadleaf Evergreen Tropical Tree',
+         'Broadleaf Evergreen Temperate Tree',
+         'Broadleaf Deciduous Tropical Tree',
+         'Broadleaf Deciduous Temperate Tree',
+         'Broadleaf Deciduous Boreal Tree',
+         'Broadleaf Evergreen Shrub',
+         'Broadleaf Deciduous Temperate Shrub',
+         'Broadleaf Deciduous Boreal Shrub',
+         'C3 Arctic Grass',
+         'C3 Non-Arctic Grass',
+         'C4 Grass',
+         'C3 Crop',
+         'C4 Crop']
+
+numbers = [1,2,4,5,6,7,9,10,13,14,15,16]
+
+fig, axs = plt.subplots(ncols=4, nrows=3, constrained_layout=True, figsize=(16,12))
+for i in range(0,3):
+    for j in range(0,4):
+        pft = 4*i + j
+        print(numbers[pft-1])
+        Ordered = PSIIContr[PSIIContr['Adjusted PFT'] == numbers[pft]].sort_values(by='HeatMid')
+        x = Ordered['HeatMid']
+        x0 = x.iloc[:]
+        y = Ordered['phiPSIImax']
+        y0 = y.iloc[:]
+        axs[i,j].set_title(names[numbers[pft]-1], loc='left', fontsize=14)
+        mod = RectangleModel(form='erf')
+        pars = mod.guess(y0, x=x0)
+        # Monte Carlo Method
+        pars['amplitude'].set(value=0.8, min=0.74, max=0.83)
+        pars['center1'].set(value=-6, min=-23, max=7)
+        pars['center2'].set(value=46, min=35, max=57)
+        pars['sigma1'].set(value=7, min=1, max=25)
+        pars['sigma2'].set(value=5, min=1, max=13)
+        out = mod.fit(y, pars, x=x)
+        ps = get_Mod_paramsValues(out)
+        A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
+        # produces dataset for r-squared
+        Aa1 = (x - m1)/s1
+        Aaa1 = []
+        for q in range(len(Aa1)):
+            Aaa1.append(math.erf(Aa1.iloc[q]))
+        Aa2 = -(x - m2)/s2
+        Aaa2 = []
+        for q in range(len(Aa2)):
+            Aaa2.append(math.erf(Aa2.iloc[q]))
+        Ayy = []
+        for q in range(len(Aaa1)):
+            Ayy.append((A/2)* (Aaa1[q] + Aaa2[q]))
+        correlation_matrix = np.corrcoef(y, Ayy)
+        correlation_xy = correlation_matrix[0,1]
+        r_squared = correlation_xy**2
+        #axs[i,j].set_title('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), loc='right')
+        axs[i,j].annotate('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)) + '\nN = ' + str(len(y.index)), xy=(1,1),
+                xycoords='axes fraction', xytext=(-10, -10), textcoords='offset pixels',
+                horizontalalignment='right',
+                verticalalignment='top', fontsize=12)
+        # Below is the attempt at formatting a boxplot figure (can be optimized)
+        TrialBox = PSIIContr[PSIIContr['Adjusted PFT'] == numbers[pft]].sort_values(by='HeatMid')
+        Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -12)] #-7
+        Box1 = TrialBox[(TrialBox['HeatMid'] > -7) & (TrialBox['HeatMid'] < -2)] #3
+        Box2 = TrialBox[(TrialBox['HeatMid'] > 3) & (TrialBox['HeatMid'] < 8)] #13
+        Box3 = TrialBox[(TrialBox['HeatMid'] > 13) & (TrialBox['HeatMid'] < 18)] #23
+        Box4 = TrialBox[(TrialBox['HeatMid'] > 23) & (TrialBox['HeatMid'] < 28)] #33
+        Box5 = TrialBox[(TrialBox['HeatMid'] > 33) & (TrialBox['HeatMid'] < 38)] #43
+        Box6 = TrialBox[(TrialBox['HeatMid'] > 43) & (TrialBox['HeatMid'] < 48)] #53
+        Box7 = TrialBox[(TrialBox['HeatMid'] > 53) & (TrialBox['HeatMid'] < 58)] #63
+
+        Box0_5 = TrialBox[(TrialBox['HeatMid'] > -12) & (TrialBox['HeatMid'] < -7)]
+        Box1_5 = TrialBox[(TrialBox['HeatMid'] > -2) & (TrialBox['HeatMid'] < 3)]
+        Box2_5 = TrialBox[(TrialBox['HeatMid'] > 8) & (TrialBox['HeatMid'] < 13)]
+        Box3_5 = TrialBox[(TrialBox['HeatMid'] > 18) & (TrialBox['HeatMid'] < 23)]
+        Box4_5 = TrialBox[(TrialBox['HeatMid'] > 28) & (TrialBox['HeatMid'] < 33)]
+        Box5_5 = TrialBox[(TrialBox['HeatMid'] > 38) & (TrialBox['HeatMid'] < 43)]
+        Box6_5 = TrialBox[(TrialBox['HeatMid'] > 48) & (TrialBox['HeatMid'] < 53)]
+        Box7_5 = TrialBox[(TrialBox['HeatMid'] > 58) & (TrialBox['HeatMid'] < 63)]
+        axs[i,j].boxplot([Box0['phiPSIImax'], Box1['phiPSIImax'], Box2['phiPSIImax'], Box3['phiPSIImax'],
+                          Box4['phiPSIImax'], Box5['phiPSIImax'], Box6['phiPSIImax'], Box7['phiPSIImax'],
+                          Box0_5['phiPSIImax'], Box1_5['phiPSIImax'], Box2_5['phiPSIImax'], Box3_5['phiPSIImax'],
+                          Box4_5['phiPSIImax'], Box5_5['phiPSIImax'], Box6_5['phiPSIImax'], Box7_5['phiPSIImax']],
+                          positions=(-14.5, -4.5, 5.5, 15.5, 25.5, 35.5, 45.5, 55.5,
+                                     -9.5, 0.5, 10.5, 20.5, 30.5, 40.5, 50.5, 60.5), widths=5)        
+        axs[i,j].plot(x, y, 'o', alpha=0.3)
+        x2 = np.linspace(-32, 63, 500)
+        Aa12 = (x2 - m1)/s1
+        Aaa12 = []
+        for q in range(len(Aa12)):
+            Aaa12.append(math.erf(Aa12[q]))
+        Aa22 = -(x2 - m2)/s2
+        Aaa22 = []
+        for q in range(len(Aa22)):
+            Aaa22.append(math.erf(Aa22[q]))
+        Ayy2 = []
+        for q in range(len(Aaa12)):
+            Ayy2.append((A/2)* (Aaa12[q] + Aaa22[q]))
+        axs[i,j].plot(x2, Ayy2, 'r-')
+        axs[i,j].set_xticks([-20,0,20,40,60])
+        axs[i,j].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8])
+        axs[i,j].set_xticklabels((-20,0,20,40,60))
+        axs[i,j].set_ylim((-0.05,1))
+        axs[i,j].grid(True)
+# %%
+# Below is the framework for the addtional plots in the Globe figure
+
+plt.rcParams['font.family'] = ['sans']
+names = ['Broadleaf Evergreen Temperate Tree', 
+         'Broadleaf Evergreen Shrub', 
+         'Broadleaf Evergreen Tropical Tree']
+numbers = [5,9,4]
+fig, axs = plt.subplots(ncols=3, constrained_layout=True, figsize=(15,5), sharey=True)
+fig.suptitle('Upper Heat Tolerant Plants', fontsize=30, y=-0.05)
+for i in range(0,3):
+    pft = i
+    print(numbers[pft])
+    Ordered = PSIIContr[PSIIContr['Adjusted PFT'] == numbers[pft]].sort_values(by='HeatMid')
+    x = Ordered['HeatMid']
+    x0 = x.iloc[:]
+    y = Ordered['phiPSIImax']
+    y0 = y.iloc[:]
+    axs[i].set_title(names[pft], loc='left', fontsize=17)
+    mod = RectangleModel(form='erf')
+    pars = mod.guess(y0, x=x0)
+    # Monte Carlo Method
+    pars['amplitude'].set(value=0.8, min=0.74, max=0.83)
+    pars['center1'].set(value=-6, min=-23, max=7)
+    pars['center2'].set(value=46, min=35, max=57)
+    pars['sigma1'].set(value=7, min=1, max=25)
+    pars['sigma2'].set(value=5, min=1, max=13)
+    out = mod.fit(y, pars, x=x)
+    ps = get_Mod_paramsValues(out)
+    A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
+    # produces dataset for r-squared
+    Aa1 = (x - m1)/s1
+    Aaa1 = []
+    for q in range(len(Aa1)):
+        Aaa1.append(math.erf(Aa1.iloc[q]))
+    Aa2 = -(x - m2)/s2
+    Aaa2 = []
+    for q in range(len(Aa2)):
+        Aaa2.append(math.erf(Aa2.iloc[q]))
+    Ayy = []
+    for q in range(len(Aaa1)):
+        Ayy.append((A/2)* (Aaa1[q] + Aaa2[q]))
+    correlation_matrix = np.corrcoef(y, Ayy)
+    correlation_xy = correlation_matrix[0,1]
+    r_squared = correlation_xy**2
+    #axs[i,j].set_title('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), loc='right')
+    axs[i].annotate('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)) + '\nN = ' + str(len(y.index)), xy=(0,1),
+            xycoords='axes fraction', xytext=(10, -10), textcoords='offset pixels',
+            horizontalalignment='left',
+            verticalalignment='top', fontsize=14)
+    # Below is the attempt at formatting a boxplot figure (can be optimized)
+    TrialBox = PSIIContr[PSIIContr['Adjusted PFT'] == numbers[pft]].sort_values(by='HeatMid')
+    Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -12)] #-7
+    Box1 = TrialBox[(TrialBox['HeatMid'] > -7) & (TrialBox['HeatMid'] < -2)] #3
+    Box2 = TrialBox[(TrialBox['HeatMid'] > 3) & (TrialBox['HeatMid'] < 8)] #13
+    Box3 = TrialBox[(TrialBox['HeatMid'] > 13) & (TrialBox['HeatMid'] < 18)] #23
+    Box4 = TrialBox[(TrialBox['HeatMid'] > 23) & (TrialBox['HeatMid'] < 28)] #33
+    Box5 = TrialBox[(TrialBox['HeatMid'] > 33) & (TrialBox['HeatMid'] < 38)] #43
+    Box6 = TrialBox[(TrialBox['HeatMid'] > 43) & (TrialBox['HeatMid'] < 48)] #53
+    Box7 = TrialBox[(TrialBox['HeatMid'] > 53) & (TrialBox['HeatMid'] < 58)] #63
+
+    Box0_5 = TrialBox[(TrialBox['HeatMid'] > -12) & (TrialBox['HeatMid'] < -7)]
+    Box1_5 = TrialBox[(TrialBox['HeatMid'] > -2) & (TrialBox['HeatMid'] < 3)]
+    Box2_5 = TrialBox[(TrialBox['HeatMid'] > 8) & (TrialBox['HeatMid'] < 13)]
+    Box3_5 = TrialBox[(TrialBox['HeatMid'] > 18) & (TrialBox['HeatMid'] < 23)]
+    Box4_5 = TrialBox[(TrialBox['HeatMid'] > 28) & (TrialBox['HeatMid'] < 33)]
+    Box5_5 = TrialBox[(TrialBox['HeatMid'] > 38) & (TrialBox['HeatMid'] < 43)]
+    Box6_5 = TrialBox[(TrialBox['HeatMid'] > 48) & (TrialBox['HeatMid'] < 53)]
+    Box7_5 = TrialBox[(TrialBox['HeatMid'] > 58) & (TrialBox['HeatMid'] < 63)]
+    axs[i].boxplot([Box0['phiPSIImax'], Box1['phiPSIImax'], Box2['phiPSIImax'], Box3['phiPSIImax'],
+                    Box4['phiPSIImax'], Box5['phiPSIImax'], Box6['phiPSIImax'], Box7['phiPSIImax'],
+                    Box0_5['phiPSIImax'], Box1_5['phiPSIImax'], Box2_5['phiPSIImax'], Box3_5['phiPSIImax'],
+                    Box4_5['phiPSIImax'], Box5_5['phiPSIImax'], Box6_5['phiPSIImax'], Box7_5['phiPSIImax']],
+                    positions=(-14.5, -4.5, 5.5, 15.5, 25.5, 35.5, 45.5, 55.5,
+                                -9.5, 0.5, 10.5, 20.5, 30.5, 40.5, 50.5, 60.5), widths=5)        
+    axs[i].plot(x, y, 'o', alpha=0.3)
+    x2 = np.linspace(-32, 63, 500)
+    Aa12 = (x2 - m1)/s1
+    Aaa12 = []
+    for q in range(len(Aa12)):
+        Aaa12.append(math.erf(Aa12[q]))
+    Aa22 = -(x2 - m2)/s2
+    Aaa22 = []
+    for q in range(len(Aa22)):
+        Aaa22.append(math.erf(Aa22[q]))
+    Ayy2 = []
+    for q in range(len(Aaa12)):
+        Ayy2.append((A/2)* (Aaa12[q] + Aaa22[q]))
+    axs[i].plot(x2, Ayy2, 'r-')
+    axs[i].vlines(39, -0.2, 1, linestyles='dashed', colors='k')
+    axs[i].set_xticks([-20,0,20,40,60])
+    axs[i].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8])
+    axs[i].set_yticklabels((0.0, 0.2, 0.4, 0.6, 0.8), fontsize=14)
+    axs[i].set_xticklabels((-20,0,20,40,60), fontsize=14)
+    axs[i].set_ylim((-0.05,1))
+    axs[i].set_xlabel('Temperature ' + u'\u2103', fontsize=15)
+    axs[0].set_ylabel('Maximum Quantum \nEfficiency of PSII', fontsize=15)
+    axs[i].grid(True)
+# %%
+plt.rcParams['font.family'] = ['sans']
+names = ['C3 Non-Arctic Grass',
+         'Broadleaf Deciduous Temperate Shrub',
+         'Broadleaf Evergreen Shrub']
+numbers = [13,10,9]
+fig, axs = plt.subplots(ncols=3, constrained_layout=True, figsize=(15,5), sharey=True)
+fig.suptitle('Lower Cold Tolerant Plants', fontsize=30, y=-0.05)
+for i in range(0,3):
+    pft = i
+    print(numbers[pft])
+    Ordered = PSIIContr[PSIIContr['Adjusted PFT'] == numbers[pft]].sort_values(by='HeatMid')
+    x = Ordered['HeatMid']
+    x0 = x.iloc[:]
+    y = Ordered['phiPSIImax']
+    y0 = y.iloc[:]
+    axs[i].set_title(names[pft], loc='left', fontsize=17)
+    mod = RectangleModel(form='erf')
+    pars = mod.guess(y0, x=x0)
+    # Monte Carlo Method
+    pars['amplitude'].set(value=0.8, min=0.74, max=0.83)
+    pars['center1'].set(value=-6, min=-23, max=7)
+    pars['center2'].set(value=46, min=35, max=57)
+    pars['sigma1'].set(value=7, min=1, max=25)
+    pars['sigma2'].set(value=5, min=1, max=13)
+    out = mod.fit(y, pars, x=x)
+    ps = get_Mod_paramsValues(out)
+    A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
+    # produces dataset for r-squared
+    Aa1 = (x - m1)/s1
+    Aaa1 = []
+    for q in range(len(Aa1)):
+        Aaa1.append(math.erf(Aa1.iloc[q]))
+    Aa2 = -(x - m2)/s2
+    Aaa2 = []
+    for q in range(len(Aa2)):
+        Aaa2.append(math.erf(Aa2.iloc[q]))
+    Ayy = []
+    for q in range(len(Aaa1)):
+        Ayy.append((A/2)* (Aaa1[q] + Aaa2[q]))
+    correlation_matrix = np.corrcoef(y, Ayy)
+    correlation_xy = correlation_matrix[0,1]
+    r_squared = correlation_xy**2
+    #axs[i,j].set_title('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), loc='right')
+    axs[i].annotate('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)) + '\nN = ' + str(len(y.index)), xy=(0,1),
+            xycoords='axes fraction', xytext=(10, -10), textcoords='offset pixels',
+            horizontalalignment='left',
+            verticalalignment='top', fontsize=14)
+    # Below is the attempt at formatting a boxplot figure (can be optimized)
+    TrialBox = PSIIContr[PSIIContr['Adjusted PFT'] == numbers[pft]].sort_values(by='HeatMid')
+    Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -12)] #-7
+    Box1 = TrialBox[(TrialBox['HeatMid'] > -7) & (TrialBox['HeatMid'] < -2)] #3
+    Box2 = TrialBox[(TrialBox['HeatMid'] > 3) & (TrialBox['HeatMid'] < 8)] #13
+    Box3 = TrialBox[(TrialBox['HeatMid'] > 13) & (TrialBox['HeatMid'] < 18)] #23
+    Box4 = TrialBox[(TrialBox['HeatMid'] > 23) & (TrialBox['HeatMid'] < 28)] #33
+    Box5 = TrialBox[(TrialBox['HeatMid'] > 33) & (TrialBox['HeatMid'] < 38)] #43
+    Box6 = TrialBox[(TrialBox['HeatMid'] > 43) & (TrialBox['HeatMid'] < 48)] #53
+    Box7 = TrialBox[(TrialBox['HeatMid'] > 53) & (TrialBox['HeatMid'] < 58)] #63
+
+    Box0_5 = TrialBox[(TrialBox['HeatMid'] > -12) & (TrialBox['HeatMid'] < -7)]
+    Box1_5 = TrialBox[(TrialBox['HeatMid'] > -2) & (TrialBox['HeatMid'] < 3)]
+    Box2_5 = TrialBox[(TrialBox['HeatMid'] > 8) & (TrialBox['HeatMid'] < 13)]
+    Box3_5 = TrialBox[(TrialBox['HeatMid'] > 18) & (TrialBox['HeatMid'] < 23)]
+    Box4_5 = TrialBox[(TrialBox['HeatMid'] > 28) & (TrialBox['HeatMid'] < 33)]
+    Box5_5 = TrialBox[(TrialBox['HeatMid'] > 38) & (TrialBox['HeatMid'] < 43)]
+    Box6_5 = TrialBox[(TrialBox['HeatMid'] > 48) & (TrialBox['HeatMid'] < 53)]
+    Box7_5 = TrialBox[(TrialBox['HeatMid'] > 58) & (TrialBox['HeatMid'] < 63)]
+    axs[i].boxplot([Box0['phiPSIImax'], Box1['phiPSIImax'], Box2['phiPSIImax'], Box3['phiPSIImax'],
+                    Box4['phiPSIImax'], Box5['phiPSIImax'], Box6['phiPSIImax'], Box7['phiPSIImax'],
+                    Box0_5['phiPSIImax'], Box1_5['phiPSIImax'], Box2_5['phiPSIImax'], Box3_5['phiPSIImax'],
+                    Box4_5['phiPSIImax'], Box5_5['phiPSIImax'], Box6_5['phiPSIImax'], Box7_5['phiPSIImax']],
+                    positions=(-14.5, -4.5, 5.5, 15.5, 25.5, 35.5, 45.5, 55.5,
+                                -9.5, 0.5, 10.5, 20.5, 30.5, 40.5, 50.5, 60.5), widths=5)        
+    axs[i].plot(x, y, 'o', alpha=0.3)
+    x2 = np.linspace(-32, 63, 500)
+    Aa12 = (x2 - m1)/s1
+    Aaa12 = []
+    for q in range(len(Aa12)):
+        Aaa12.append(math.erf(Aa12[q]))
+    Aa22 = -(x2 - m2)/s2
+    Aaa22 = []
+    for q in range(len(Aa22)):
+        Aaa22.append(math.erf(Aa22[q]))
+    Ayy2 = []
+    for q in range(len(Aaa12)):
+        Ayy2.append((A/2)* (Aaa12[q] + Aaa22[q]))
+    axs[i].plot(x2, Ayy2, 'r-')
+    axs[i].vlines(0, -0.2, 1, linestyles='dashed', colors='k')
+    axs[i].set_xticks([-20,0,20,40,60])
+    axs[i].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8])
+    axs[i].set_yticklabels((0.0, 0.2, 0.4, 0.6, 0.8), fontsize=14)
+    axs[i].set_xticklabels((-20,0,20,40,60), fontsize=14)
+    axs[i].set_ylim((-0.05,1))
+    axs[i].set_xlabel('Temperature ' + u'\u2103', fontsize=15)
+    axs[0].set_ylabel('Maximum Quantum \nEfficiency of PSII', fontsize=15)
+    axs[i].grid(True)
+# %%
+plt.rcParams['font.family'] = ['sans']
+names = ['Needleleaf Evergreen Boreal Tree',
+         'C4 Grass',
+         'C3 Crop']
+numbers = [2,14,15]
+fig, axs = plt.subplots(ncols=3, constrained_layout=True, figsize=(15,5), sharey=True)
+fig.suptitle('Most Temperature Constrained Plants', fontsize=30, y=-0.05)
+for i in range(0,3):
+    pft = i
+    print(numbers[pft])
+    Ordered = PSIIContr[PSIIContr['Adjusted PFT'] == numbers[pft]].sort_values(by='HeatMid')
+    x = Ordered['HeatMid']
+    x0 = x.iloc[:]
+    y = Ordered['phiPSIImax']
+    y0 = y.iloc[:]
+    axs[i].set_title(names[pft], loc='left', fontsize=17)
+    mod = RectangleModel(form='erf')
+    pars = mod.guess(y0, x=x0)
+    # Monte Carlo Method
+    pars['amplitude'].set(value=0.8, min=0.74, max=0.83)
+    pars['center1'].set(value=-6, min=-23, max=7)
+    pars['center2'].set(value=46, min=35, max=57)
+    pars['sigma1'].set(value=7, min=1, max=25)
+    pars['sigma2'].set(value=5, min=1, max=13)
+    out = mod.fit(y, pars, x=x)
+    ps = get_Mod_paramsValues(out)
+    A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
+    # produces dataset for r-squared
+    Aa1 = (x - m1)/s1
+    Aaa1 = []
+    for q in range(len(Aa1)):
+        Aaa1.append(math.erf(Aa1.iloc[q]))
+    Aa2 = -(x - m2)/s2
+    Aaa2 = []
+    for q in range(len(Aa2)):
+        Aaa2.append(math.erf(Aa2.iloc[q]))
+    Ayy = []
+    for q in range(len(Aaa1)):
+        Ayy.append((A/2)* (Aaa1[q] + Aaa2[q]))
+    correlation_matrix = np.corrcoef(y, Ayy)
+    correlation_xy = correlation_matrix[0,1]
+    r_squared = correlation_xy**2
+    #axs[i,j].set_title('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)), loc='right')
+    axs[i].annotate('$\mathregular{R^{2}}$ = ' + str(round(r_squared, 2)) + '\nN = ' + str(len(y.index)), xy=(0,1),
+            xycoords='axes fraction', xytext=(10, -10), textcoords='offset pixels',
+            horizontalalignment='left',
+            verticalalignment='top', fontsize=14)
+    # Below is the attempt at formatting a boxplot figure (can be optimized)
+    TrialBox = PSIIContr[PSIIContr['Adjusted PFT'] == numbers[pft]].sort_values(by='HeatMid')
+    Box0 = TrialBox[(TrialBox['HeatMid'] > -17) & (TrialBox['HeatMid'] < -12)] #-7
+    Box1 = TrialBox[(TrialBox['HeatMid'] > -7) & (TrialBox['HeatMid'] < -2)] #3
+    Box2 = TrialBox[(TrialBox['HeatMid'] > 3) & (TrialBox['HeatMid'] < 8)] #13
+    Box3 = TrialBox[(TrialBox['HeatMid'] > 13) & (TrialBox['HeatMid'] < 18)] #23
+    Box4 = TrialBox[(TrialBox['HeatMid'] > 23) & (TrialBox['HeatMid'] < 28)] #33
+    Box5 = TrialBox[(TrialBox['HeatMid'] > 33) & (TrialBox['HeatMid'] < 38)] #43
+    Box6 = TrialBox[(TrialBox['HeatMid'] > 43) & (TrialBox['HeatMid'] < 48)] #53
+    Box7 = TrialBox[(TrialBox['HeatMid'] > 53) & (TrialBox['HeatMid'] < 58)] #63
+
+    Box0_5 = TrialBox[(TrialBox['HeatMid'] > -12) & (TrialBox['HeatMid'] < -7)]
+    Box1_5 = TrialBox[(TrialBox['HeatMid'] > -2) & (TrialBox['HeatMid'] < 3)]
+    Box2_5 = TrialBox[(TrialBox['HeatMid'] > 8) & (TrialBox['HeatMid'] < 13)]
+    Box3_5 = TrialBox[(TrialBox['HeatMid'] > 18) & (TrialBox['HeatMid'] < 23)]
+    Box4_5 = TrialBox[(TrialBox['HeatMid'] > 28) & (TrialBox['HeatMid'] < 33)]
+    Box5_5 = TrialBox[(TrialBox['HeatMid'] > 38) & (TrialBox['HeatMid'] < 43)]
+    Box6_5 = TrialBox[(TrialBox['HeatMid'] > 48) & (TrialBox['HeatMid'] < 53)]
+    Box7_5 = TrialBox[(TrialBox['HeatMid'] > 58) & (TrialBox['HeatMid'] < 63)]
+    axs[i].boxplot([Box0['phiPSIImax'], Box1['phiPSIImax'], Box2['phiPSIImax'], Box3['phiPSIImax'],
+                    Box4['phiPSIImax'], Box5['phiPSIImax'], Box6['phiPSIImax'], Box7['phiPSIImax'],
+                    Box0_5['phiPSIImax'], Box1_5['phiPSIImax'], Box2_5['phiPSIImax'], Box3_5['phiPSIImax'],
+                    Box4_5['phiPSIImax'], Box5_5['phiPSIImax'], Box6_5['phiPSIImax'], Box7_5['phiPSIImax']],
+                    positions=(-14.5, -4.5, 5.5, 15.5, 25.5, 35.5, 45.5, 55.5,
+                                -9.5, 0.5, 10.5, 20.5, 30.5, 40.5, 50.5, 60.5), widths=5)        
+    axs[i].plot(x, y, 'o', alpha=0.3)
+    x2 = np.linspace(-32, 63, 500)
+    Aa12 = (x2 - m1)/s1
+    Aaa12 = []
+    for q in range(len(Aa12)):
+        Aaa12.append(math.erf(Aa12[q]))
+    Aa22 = -(x2 - m2)/s2
+    Aaa22 = []
+    for q in range(len(Aa22)):
+        Aaa22.append(math.erf(Aa22[q]))
+    Ayy2 = []
+    for q in range(len(Aaa12)):
+        Ayy2.append((A/2)* (Aaa12[q] + Aaa22[q]))
+    axs[i].plot(x2, Ayy2, 'r-')
+    axs[i].vlines([16,34], -0.2, 1, linestyles='dashed', colors='k')
+    axs[i].set_xticks([-20,0,20,40,60])
+    axs[i].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8])
+    axs[i].set_yticklabels((0.0, 0.2, 0.4, 0.6, 0.8), fontsize=14)
+    axs[i].set_xticklabels((-20,0,20,40,60), fontsize=14)
+    axs[i].set_ylim((-0.05,1))
+    axs[i].set_xlabel('Temperature ' + u'\u2103', fontsize=15)
+    axs[0].set_ylabel('Maximum Quantum \nEfficiency of PSII', fontsize=15)
+    axs[i].grid(True)
 # %%

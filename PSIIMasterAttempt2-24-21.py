@@ -16,8 +16,10 @@ import math
 # from scipy.optimize import curve_fit
 from lmfit import Model
 from lmfit.models import RectangleModel, StepModel
+from scipy.linalg.decomp_schur import rsf2csf
 from sklearn.metrics import r2_score
 import scipy.stats as stats
+from statsmodels.tools.validation.validation import _right_squeeze
 
 # %%
 # all current relevent functions used
@@ -232,7 +234,7 @@ def get_setdata_plot(dataset):
         mod.set_param_hint('center2', value=45, min=15, max=60)
         mod.set_param_hint('sigma1', value=7, min=1, max=12)
         mod.set_param_hint('sigma2', value=7, min=1, max=12)
-        pars = mod.guess(y0, x=x0)
+        pars = mod.guess(y, x=x)
         pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
         pars['center1'].set(value=-6, min=-23, max=7)
         pars['center2'].set(value=46, min=35, max=57)
@@ -262,7 +264,11 @@ def get_setdata_plot(dataset):
 
                 # Here the residual of the dataset is calculated
                 resid = (y - Ayy)
-                print(np.sum(resid*resid))
+                print('Sum of residuals ', np.sum(resid*resid))
+                correlation_matrix = np.corrcoef(y, Ayy)
+                correlation_xy = correlation_matrix[0,1]
+                r_squared = correlation_xy**2
+                print('r-squared: ', r_squared)
                 # Generate the mean absolute error
                 MAE = (np.sum(abs(resid))/len(resid))
                 print('MAE : ', MAE)
@@ -1060,17 +1066,17 @@ def carlo_stats(dataset):
     y0 = y.iloc[:]
     # Quad Model run
     mod = RectangleModel(form='erf')
-    mod.set_param_hint('amplitude', value=0.8, min=0.75, max=0.9)
-    mod.set_param_hint('center1', value=-3, min=-15, max=10)
-    mod.set_param_hint('center2', value=45, min=15, max=60)
-    mod.set_param_hint('sigma1', value=7, min=1, max=12)
-    mod.set_param_hint('sigma2', value=7, min=1, max=12)
+#    mod.set_param_hint('amplitude', value=0.8, min=0.75, max=0.9)
+#    mod.set_param_hint('center1', value=-3, min=-15, max=10)
+#    mod.set_param_hint('center2', value=45, min=15, max=60)
+#    mod.set_param_hint('sigma1', value=7, min=1, max=12)
+#    mod.set_param_hint('sigma2', value=7, min=1, max=12)
     pars = mod.guess(y0, x=x0)
     pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
-    pars['center1'].set(value=-6, min=-23, max=7)
-    pars['center2'].set(value=46, min=35, max=57)
-    pars['sigma1'].set(value=7, min=1, max=25)
-    pars['sigma2'].set(value=5, min=1, max=13)
+    pars['center1'].set(value=7, min=-23, max=20)
+    pars['center2'].set(value=46, min=20, max=60)
+    pars['sigma1'].set(value=7, min=1, max=30)
+    pars['sigma2'].set(value=5, min=1, max=30)
     out = mod.fit(y, pars, x=x)
     ps = get_Mod_paramsValues(out)
     A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
@@ -1087,7 +1093,9 @@ def carlo_stats(dataset):
     for i in range(len(Aaa1)):
             Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
     # get r2 score
-    r2score = r2_score(y, Ayy)
+    correlation_matrix = np.corrcoef(y, Ayy)
+    correlation_xy = correlation_matrix[0,1]
+    r_squared = correlation_xy**2
     # Here the residual of the dataset is calculated
     resid = (y - Ayy)
     # Generate the mean absolute error
@@ -1102,7 +1110,7 @@ def carlo_stats(dataset):
         Wilm = ((2*np.sum(abs(y - np.mean(y))))/(np.sum(abs(Ayy - y)))) - 1
     else:
         Wilm = 1 - ((np.sum(abs(Ayy - y)))/(2*np.sum(abs(y - np.mean(y)))))
-    return [(r2score, MAE, RMSE, Wilm, A, m1, s1, m2, s2)]
+    return [(r_squared, MAE, RMSE, Wilm, A, m1, s1, m2, s2, np.min(dataset['HeatMid']), np.max(dataset['HeatMid']))]
 # %%
 # Creating a 5C division
 TrialBox = PSIIContr.sort_values(by='HeatMid')
@@ -1172,13 +1180,13 @@ print('Box7: ', len(Box7['HeatMid']))
 
 # Creating a random creation dataset
 montefitvalues = pd.DataFrame()
-for j in range(0, 500):
+for j in range(0, 700):
     print(j)
     boxlist = [Box0, Box1, Box2, Box3, Box4, Box5, Box6, Box7]
     carlobox = pd.DataFrame()
     for i in range(0, len(boxlist)):
         index = range(0, len(boxlist[i]))
-        sample = random.sample(index, int(len(boxlist[i])/3))
+        sample = random.sample(index, int(len(boxlist[i])/5))
         boxdf = boxlist[i].reset_index()
         newboxdf = boxdf.filter(items = sample, axis=0)
         carlobox = carlobox.append(newboxdf, ignore_index=True)
@@ -1203,14 +1211,326 @@ plt.yscale('log')
 plt.ylim(0,12)
 plt.grid(True)
 # %%
-fig, axs = plt.subplots(5,1)
-axs[0].hist(montefitvalues[3], density=True)
+fig, axs = plt.subplots(1,5, tight_layout=True, figsize=(16,5))
+axs[0].hist(montefitvalues[4], density=True)
 axs[0].set_title('A')
-axs[1].hist(montefitvalues[4], density=True)
+axs[1].hist(montefitvalues[5], density=True)
 axs[1].set_title('M1')
-axs[2].hist(montefitvalues[5], density=True)
+axs[2].hist(montefitvalues[6], density=True)
 axs[2].set_title('S1')
-axs[3].hist(montefitvalues[6], density=True)
+axs[3].hist(montefitvalues[7], density=True)
 axs[3].set_title('M2')
-axs[4].hist(montefitvalues[7], density=True)
+axs[4].hist(montefitvalues[8], density=True)
 axs[4].set_title('S2')
+
+import random
+# %%
+# Method to define 2 groups of index values for masking
+idexs = np.array(PSIIContr.index)
+
+random.shuffle(idexs)
+percent_cut = 0.7
+test_set = idexs[:int(len(idexs)*percent_cut)]
+train_set = idexs[int(len(idexs)*percent_cut):]
+
+print(len(test_set), len(train_set))
+print('test: ', test_set[:5])
+print('train: ', train_set[:5])
+
+# Method for masking
+testing = PSIIContr.loc[test_set]
+training = PSIIContr.loc[train_set]
+
+
+def veri_stats(dataset1, dataset2):
+    Ordered = dataset1.sort_values(by='HeatMid')
+    Ordered_2 = dataset2.sort_values(by='HeatMid')
+    x = Ordered['HeatMid']
+    x0 = x.iloc[:]
+    y = Ordered['phiPSIImax']
+    y0 = y.iloc[:]
+    # Quad Model run
+    mod = RectangleModel(form='erf')
+    mod.set_param_hint('amplitude', value=0.8, min=0.75, max=0.9)
+    mod.set_param_hint('center1', value=-3, min=-15, max=10)
+    mod.set_param_hint('center2', value=45, min=15, max=60)
+    mod.set_param_hint('sigma1', value=7, min=1, max=12)
+    mod.set_param_hint('sigma2', value=7, min=1, max=12)
+    pars = mod.guess(y0, x=x0)
+    pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
+    pars['center1'].set(value=-6, min=-23, max=7)
+    pars['center2'].set(value=46, min=35, max=57)
+    pars['sigma1'].set(value=7, min=1, max=25)
+    pars['sigma2'].set(value=5, min=1, max=13)
+    out = mod.fit(y, pars, x=x)
+    ps = get_Mod_paramsValues(out)
+    A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
+    # produces dataset for comparison
+    x2 = Ordered_2['HeatMid']
+    y2 = Ordered_2['phiPSIImax']
+    Aa1 = (x2 - m1)/s1
+    Aaa1 = []
+    for i in range(len(Aa1)):
+            Aaa1.append(math.erf(Aa1.iloc[i]))
+    Aa2 = -(x2 - m2)/s2
+    Aaa2 = []
+    for i in range(len(Aa2)):
+            Aaa2.append(math.erf(Aa2.iloc[i]))
+    Ayy = []
+    for i in range(len(Aaa1)):
+            Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
+    # get r2 score
+    correlation_matrix = np.corrcoef(y2, Ayy)
+    correlation_xy = correlation_matrix[0,1]
+    r_squared = correlation_xy**2
+    # Here the residual of the dataset is calculated
+    resid = (y2 - Ayy)
+    # Generate the mean absolute error
+    MAE = (np.sum(abs(resid))/len(resid))
+    # Generate the RMSE
+    test2 = np.zeros(len(resid))
+    for i in range(0,len(resid)):
+        test2[i] = float(resid.iloc[i])**2
+    RMSE = (np.sum(test2)/len(resid))**0.5
+
+    return [(r_squared, MAE, RMSE)]
+
+print(veri_stats(testing, training)[:])
+# %%
+crossfitvalues = pd.DataFrame()
+idexs = np.array(PSIIContr.index)
+
+for j in range(0, 1000):
+    random.shuffle(idexs)
+    percent_cut = 0.7
+    test_set = idexs[:int(len(idexs)*percent_cut)]
+    train_set = idexs[int(len(idexs)*percent_cut):]
+
+    # Method for masking
+    testing = PSIIContr.loc[test_set]
+    training = PSIIContr.loc[train_set]
+    print(j)
+    crossfitvalues = crossfitvalues.append(veri_stats(testing, training))
+# %%
+# Section Used For Paper
+crossfitvalues = pd.DataFrame()
+idexs = np.array(PSIIContr.index)
+
+for j in range(0, 500):
+    random.shuffle(idexs)
+    percent_cut = 0.1
+    test_set = idexs[:int(len(idexs)*percent_cut)]
+
+    # Method for masking
+    testing = PSIIContr.loc[test_set]
+    print(j)
+    crossfitvalues = crossfitvalues.append(carlo_stats(testing))
+# %%
+plt.hist(crossfitvalues.iloc[:,4])
+# %%
+# 3 box carlo testing
+low_box = PSIIContr[PSIIContr['HeatMid'] < 7]
+mid_box = PSIIContr[(PSIIContr['HeatMid'] > 7) & (PSIIContr['HeatMid'] < 35)]
+hig_box = PSIIContr[PSIIContr['HeatMid'] > 35]
+
+threebin_fitvalues = pd.DataFrame()
+for j in range(0, 750):
+    print(j)
+    boxlist = [low_box, mid_box, hig_box]
+    carlobox = pd.DataFrame()
+    for i in range(0, len(boxlist)):
+        index = range(0, len(boxlist[i]))
+        sample = random.sample(index, int(len(boxlist[i])/10))
+        boxdf = boxlist[i].reset_index()
+        newboxdf = boxdf.filter(items = sample, axis=0)
+        carlobox = carlobox.append(newboxdf, ignore_index=True)
+    #plt.plot(carlobox['HeatMid'], carlobox['phiPSIImax'], 'o')
+    threebin_fitvalues = threebin_fitvalues.append(carlo_stats(carlobox))
+
+# %
+fig = plt.figure(figsize=(12,6))
+
+gs = fig.add_gridspec(2,5, width_ratios=(1,1,1,1,1), height_ratios=(1,1),
+                      left=0, right=0.9, bottom=0.1, top=0.9,
+                      wspace=0.3, hspace=0.3)
+
+r_squ = fig.add_subplot(gs[0,0])
+me_ab = fig.add_subplot(gs[0,1])
+ro_me = fig.add_subplot(gs[0,2])
+wilm_in = fig.add_subplot(gs[0,3])
+par1 = fig.add_subplot(gs[1,0])
+par2 = fig.add_subplot(gs[1,1])
+par3 = fig.add_subplot(gs[1,2])
+par4 = fig.add_subplot(gs[1,3])
+par5 = fig.add_subplot(gs[1,4])
+
+r_squ.hist(threebin_fitvalues[0])
+r_squ.set_title(str(np.round(np.mean(threebin_fitvalues[0]), 3)) + ', ' + 
+                  str(np.round(np.std(threebin_fitvalues[0]), 3)))
+me_ab.hist(threebin_fitvalues[1])
+me_ab.set_title(str(np.round(np.mean(threebin_fitvalues[1]), 3)) + ', ' +
+                  str(np.round(np.std(threebin_fitvalues[1]), 3)))
+ro_me.hist(threebin_fitvalues[2])
+ro_me.set_title(str(np.round(np.mean(threebin_fitvalues[2]), 3)) + ', ' +
+                  str(np.round(np.std(threebin_fitvalues[2]), 3)))
+wilm_in.hist(threebin_fitvalues[3])
+wilm_in.set_title(str(np.round(np.mean(threebin_fitvalues[3]), 3)) + ', ' +
+                  str(np.round(np.std(threebin_fitvalues[3]), 3)))
+
+par1.hist(threebin_fitvalues[4])
+par1.set_title(str(np.round(np.mean(threebin_fitvalues[4]), 3)) + ', ' + 
+                  str(np.round(np.std(threebin_fitvalues[4]), 3)))
+par2.hist(threebin_fitvalues[5])
+par2.set_title(str(np.round(np.mean(threebin_fitvalues[5]), 3)) + ', ' + 
+                  str(np.round(np.std(threebin_fitvalues[5]), 3)))
+par3.hist(threebin_fitvalues[6])
+par3.set_title(str(np.round(np.mean(threebin_fitvalues[6]), 3)) + ', ' + 
+                  str(np.round(np.std(threebin_fitvalues[6]), 3)))
+par4.hist(threebin_fitvalues[7])
+par4.set_title(str(np.round(np.mean(threebin_fitvalues[7]), 3)) + ', ' + 
+                  str(np.round(np.std(threebin_fitvalues[7]), 3)))
+par5.hist(threebin_fitvalues[8])
+par5.set_title(str(np.round(np.mean(threebin_fitvalues[8]), 3)) + ', ' + 
+                  str(np.round(np.std(threebin_fitvalues[8]), 3)))
+
+plt.show()
+# %%
+# doing the random 16 sample cuts
+random.sample(range(0, 1000), 10)
+
+preindex_cuts = random.sample(range(0, len(PSIIContr['HeatMid'])), 15)
+index_cuts = sorted(preindex_cuts)
+idexs = np.array(PSIIContr.index)
+
+#boxdf = boxlist[i].reset_index()
+#newboxdf = boxdf.filter(items = sample, axis=0)
+
+random.shuffle(idexs)
+p1_set = idexs[:index_cuts[0]]
+p2_set = idexs[index_cuts[0]:index_cuts[1]]
+p3_set = idexs[index_cuts[1]:index_cuts[2]]
+p4_set = idexs[index_cuts[2]:index_cuts[3]]
+p5_set = idexs[index_cuts[3]:index_cuts[4]]
+p6_set = idexs[index_cuts[4]:index_cuts[5]]
+p7_set = idexs[index_cuts[5]:index_cuts[6]]
+p8_set = idexs[index_cuts[6]:index_cuts[7]]
+p9_set = idexs[index_cuts[7]:index_cuts[8]]
+p10_set = idexs[index_cuts[8]:index_cuts[9]]
+p11_set = idexs[index_cuts[9]:index_cuts[10]]
+p12_set = idexs[index_cuts[10]:index_cuts[11]]
+p13_set = idexs[index_cuts[11]:index_cuts[12]]
+p14_set = idexs[index_cuts[12]:index_cuts[13]]
+p15_set = idexs[index_cuts[13]:index_cuts[14]]
+p16_set = idexs[index_cuts[14]:]
+
+pft_fake = [p1_set, p2_set, p3_set, p4_set, p5_set, p6_set, p7_set, p8_set,
+            p9_set, p10_set, p11_set, p12_set, p13_set, p14_set, p15_set, p16_set]
+# %%
+sixteen_runset = pd.DataFrame()
+for i in range(0,16):
+    sixteen_runset.append(carlo_stats(PSIIContr.filter(items=pft_fake[i], axis=0)), ignore_index=True)
+    print(carlo_stats(PSIIContr.filter(items=pft_fake[i], axis=0)))
+# %%
+i = 0
+mean_r2_list = pd.DataFrame()
+while i < 100:
+    preindex_cuts = random.sample(range(0, len(PSIIContr['HeatMid'])), 15)
+    index_cuts = sorted(preindex_cuts)
+    idexs = np.array(PSIIContr.index)
+
+    random.shuffle(idexs)
+    p1_set = idexs[:index_cuts[0]]
+    p2_set = idexs[index_cuts[0]:index_cuts[1]]
+    p3_set = idexs[index_cuts[1]:index_cuts[2]]
+    p4_set = idexs[index_cuts[2]:index_cuts[3]]
+    p5_set = idexs[index_cuts[3]:index_cuts[4]]
+    p6_set = idexs[index_cuts[4]:index_cuts[5]]
+    p7_set = idexs[index_cuts[5]:index_cuts[6]]
+    p8_set = idexs[index_cuts[6]:index_cuts[7]]
+    p9_set = idexs[index_cuts[7]:index_cuts[8]]
+    p10_set = idexs[index_cuts[8]:index_cuts[9]]
+    p11_set = idexs[index_cuts[9]:index_cuts[10]]
+    p12_set = idexs[index_cuts[10]:index_cuts[11]]
+    p13_set = idexs[index_cuts[11]:index_cuts[12]]
+    p14_set = idexs[index_cuts[12]:index_cuts[13]]
+    p15_set = idexs[index_cuts[13]:index_cuts[14]]
+    p16_set = idexs[index_cuts[14]:]
+
+    pft_fake = [p1_set, p2_set, p3_set, p4_set, p5_set, p6_set, p7_set, p8_set,
+                p9_set, p10_set, p11_set, p12_set, p13_set, p14_set, p15_set, p16_set]
+    f = 2000
+    for i in range(0,16):
+        f = np.min((f, len(pft_fake[i])))
+    while f > 10:
+        i = i + 1
+        print(i)
+        r_set = pd.DataFrame()
+        for j in range(0,16):
+            r_set.append(carlo_stats(PSIIContr.filter(items=pft_fake[j], axis=0)))
+        print(r_set)
+        mean_r2_list.append(np.mean(r_set[0]))
+
+# %%
+x = PSIIContr['HeatMid'][:].reset_index()
+x0 = x.to_numpy()
+y = PSIIContr['phiPSIImax'][:].reset_index()
+y0 = y.to_numpy()
+# %%
+mod = RectangleModel(form='erf')
+out = mod.fit(y0, x=x0)
+print(out.fit_report())
+# %%
+def lin(x,x1,k1, a):
+    return (1/k1)*(x - x1) + a/2
+
+def lin_approx(x, a,x1,x2,k1,k2):
+    ay = []
+    for i in range(len(x)):
+        #print(i)
+        if x.iloc[i] < x1 + k1*(a/2):
+            ay.append((np.maximum(0,lin(x.iloc[i],x1,k1,a))))
+        elif x.iloc[i] > x2 - k2*(a/2):
+            ay.append((np.maximum(0,lin(x.iloc[i],x2,-k2,a))))
+        else:
+            ay.append(a)
+    return ay
+
+# %%
+lin_a = lin_approx(PSIIContr['HeatMid'], 0.76, -10, 48, 19,8)
+d = {'col1': PSIIContr['HeatMid'], 'col2': lin_a}
+df = pd.DataFrame(data=d)
+#df = df.sort_values(by='col1') # add back if want to see linear func
+x = np.linspace(-10,50,100)
+#plt.plot(df['col1'], df['col2'], '-r') # linear func plot
+plt.scatter(PSIIContr['HeatMid'], PSIIContr['phiPSIImax'] - df['col2'], alpha=0.2) # can convert back to data scatter
+
+# %%
+def piece_func(T):
+    '''In terms of temperature, and parameters are fixed, not variables'''
+    if T < (-10 + 19*(0.76/2)):     # 2.78 C
+        y = (np.maximum(0,(T/19) + (0.76/2 + 10/19)))
+    elif T > (48 - 8*(0.76/2)):     # 44.96 C
+        y = (np.maximum(0, -(1/8)*(T - 48) + 0.76/2))
+    else:
+        y = 0.76
+    return y
+# %%
+fig = plt.figure(figsize=(6, 3))
+gs = fig.add_gridspec(2, 2,  width_ratios=(7, 2), height_ratios=(2, 7),
+                        left=0.1, right=0.9, bottom=0.1, top=0.9,
+                        wspace=0.05, hspace=0.05)
+ax = fig.add_subplot(gs[1, 0])
+ax.grid(True)
+ax.plot(df['col1'], PSIIContr['phiPSIImax'] - df['col2'], 'o')
+ax_histy = fig.add_subplot(gs[1, 1], sharey=ax)
+ax_histy.hist(PSIIContr['phiPSIImax'] - df['col2'], bins=40, orientation='horizontal')
+ax_histy.tick_params(axis="y", labelleft=False)
+ax_histy.grid(True)
+# %%
+resid = (PSIIContr['phiPSIImax'] - df['col2']) # only accurate if df did not get sorted
+print('Sum of residuals ', np.sum(resid*resid))
+correlation_matrix = np.corrcoef(PSIIContr['phiPSIImax'], df['col2'])
+correlation_xy = correlation_matrix[0,1]
+r_squared = correlation_xy**2
+print(r_squared)
+# %%

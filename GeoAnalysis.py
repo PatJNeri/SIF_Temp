@@ -112,14 +112,17 @@ for i in range(0, len(PSIIGEO['GEO'])):
 # %%
 # Here we need to plot them
 # Finally fixed!!!
-
+import cartopy.feature as cfeature
+fig = plt.figure(figsize=(15,30))
 ax = plt.axes(projection=ccrs.PlateCarree())
 for i in range(0, len(PSIIGEO['GEO'])):
-    ax.plot(PSIIGEO['lon_num'].iloc[i], PSIIGEO['lat_num'].iloc[i], 'bo', markersize=2)
+    ax.plot(PSIIGEO['lon_num'].iloc[i], PSIIGEO['lat_num'].iloc[i], 'b*', markersize=12)
     #ax.text(float(PSIIGEO['lon_num'].iloc[i]) + 0.01, float(PSIIGEO['lat_num'].iloc[i]) - 0.01, PSIIGEO['paper'].iloc[i], transform=ccrs.PlateCarree())
-
-#ax.coastlines(color='black')
-ax.stock_img()
+ax.set_extent([-180,180,-90,90], crs=ccrs.PlateCarree())
+#ax.stock_img()
+ax.add_feature(cfeature.COASTLINE)
+ax.add_feature(cfeature.LAND)
+ax.add_feature(cfeature.OCEAN)
 plt.show()
 # %%
 # generating a uniform string that can be more easily checked against other locations
@@ -346,4 +349,16 @@ for i in range(0,35):
     Tbot_clim[i, 1] = np.std(cum_ann_Tbot[:, i])
     Tbot_clim[i, 0] = np.mean(cum_ann_Tbot[:, i])
 # %%
- 
+import cartopy.feature as cfeature
+fig = plt.figure(figsize=(15,30))
+ax = plt.axes(projection=ccrs.PlateCarree())
+for i in range(0, len(PSIIGEO['GEO'])):
+    ax.plot(PSIIGEO['lon_num'].iloc[i], PSIIGEO['lat_num'].iloc[i], 'b*', markersize=12)
+    #ax.text(float(PSIIGEO['lon_num'].iloc[i]) + 0.01, float(PSIIGEO['lat_num'].iloc[i]) - 0.01, PSIIGEO['paper'].iloc[i], transform=ccrs.PlateCarree())
+ax.set_extent([-180,180,-90,90], crs=ccrs.PlateCarree())
+#ax.stock_img()
+ax.add_feature(cfeature.COASTLINE)
+ax.add_feature(cfeature.LAND)
+ax.add_feature(cfeature.OCEAN)
+plt.show()
+# %%

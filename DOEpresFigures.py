@@ -1,4 +1,10 @@
 # %%
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import math
+from lmfit.models import RectangleModel
+
 def get_Mod_paramsValues(output):
         """Getting out values of model params with numerical values
         Produces a dataframe of param names and values """
@@ -22,19 +28,19 @@ def get_setdata_plotttt(dataset):
         # Quad Model run
         mod = RectangleModel(form='erf')
         pars = mod.guess(y0, x=x0)
-        pars['amplitude'].set(value=0.8, min=0.78, max=0.93)
-        pars['center1'].set(value=-6, min=-12, max=7)
-        pars['center2'].set(value=40, min=35, max=57)
-        pars['sigma1'].set(value=7, min=1, max=12)
+        pars['amplitude'].set(value=0.8, min=0.6, max=0.83)
+        pars['center1'].set(value=-6, min=-23, max=7)
+        pars['center2'].set(value=46, min=35, max=57)
+        pars['sigma1'].set(value=7, min=1, max=25)
         pars['sigma2'].set(value=5, min=1, max=12)
         out = mod.fit(y, pars, x=x)
         ModelChoice = 'Rect' #input('Chose between [Quad, Rect] or [Both] models:')
         if ModelChoice == 'Rect':
                 Tittt = input('Give title of plot')
-                print('You have chosen Rectangle model for the ', dataset.name, 'dataset.')
+                #print('You have chosen Rectangle model for the ', dataset.name, 'dataset.')
                 print(out.fit_report())
                 ps = get_Mod_paramsValues(out)
-                print(ps.val[:])
+                #print(ps.val[:])
                 A, m1, s1, m2, s2 = ps.val[0], ps.val[1], ps.val[2], ps.val[3], ps.val[4]  
                 # produces dataset for r-squared
                 Aa1 = (x - m1)/s1
@@ -48,11 +54,25 @@ def get_setdata_plotttt(dataset):
                 Ayy = []
                 for i in range(len(Aaa1)):
                        Ayy.append((A/2)* (Aaa1[i] + Aaa2[i]))
-                print('R-squared : ', r2_score(y, Ayy))
-
                 # Here the residual of the dataset is calculated
                 resid = (y - Ayy)
-
+                # Various indexes
+                MAE = (np.sum(abs(resid))/len(resid))
+                # Generate the RMSE
+                test2 = np.zeros(len(resid))
+                for i in range(0,len(resid)):
+                        test2[i] = float(resid.iloc[i])**2
+                RMSE = (np.sum(test2)/len(resid))**0.5
+                # Generate Willmont index
+                if (np.sum(abs(Ayy - y))) > 2*np.sum(abs(y - np.mean(y))):
+                        Wilm = ((2*np.sum(abs(y - np.mean(y))))/(np.sum(abs(Ayy - y)))) - 1
+                else:
+                        Wilm = 1 - ((np.sum(abs(Ayy - y)))/(2*np.sum(abs(y - np.mean(y)))))
+                print('R-squared : ', r2_score(y, Ayy))
+                print('MAE : ', MAE)
+                print('RMSE : ', RMSE)
+                print('Wilm : ', Wilm)                
+                
                 # Below is the attempt at formatting a boxplot figure (can be optimized)
                 TrialBox = dataset.sort_values(by='HeatMid')
                 
@@ -107,12 +127,12 @@ def get_setdata_plotttt(dataset):
                              verticalalignment='top', fontsize=17)
                 plt.xticks(ticks=range(-32,68, 5), labels=range(-32,68, 5), fontsize=10)
                 plt.yticks(np.linspace(0,1,6), fontsize = 10)
-                plt.ylabel('Maximum Quantum Efficiency of PSII', fontsize=17)
-                plt.xlabel('Temperature ' + u'\u2103', fontsize=17)
+                plt.ylabel('Maximum Quantum Efficiency of PSII\n (Fv/Fm)', fontsize=17)
+                plt.xlabel('Experiment Temperature ' + u'\u2103', fontsize=17)
                 #plt.title(dataset.name + ' Boxplot (width 10) with data')
                 plt.ylim([0, 1])
                 plt.xlim([-32, 63])
                 plt.grid(True)
-                plt.title(Tittt)
+                plt.title(Tittt, fontsize=20)
 
 # %%
